@@ -2,7 +2,7 @@ from django.urls import path, re_path
 from cub import views
 
 urlpatterns = [
-    re_path("cub/", views.hello, name="cub"),
+    path("", views.hello, name="cub"),
     re_path(r'^json/$', views.json_1),
     re_path(r'^json_y/$', views.json_y),
     re_path(r'^json_r/$', views.json_r),
