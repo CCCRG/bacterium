@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>КУБ</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'cub/base.css' %}">
+    {% load static %}
+    <script src="{% static 'cub/jquery.js' %}"></script>
+    {% load static %}
+    <script src="{% static 'cub/jquery.min.js' %}"></script>
+    {% load static %}
+    <script src="{% static 'cub/jQueryRotate.js' %}"></script>
+</head>
+    <body>
+        <div class="div_1">
+            <div id="first" class="div_2">
+                <div class="div_3"></div>
+            </div>
+            <div class="div_201"></div>
+            <div class="div_202"></div>
+            <div class="div_203"></div>
+            <div class="div_204"></div>
+        </div>
+	    <div class="div_menu">
+            <form name="xy_eat">
+                <a>x</a><input type="text" class="in_x">
+                <a>y</a><input type="text" class="in_y">
+                <a> (set eats)</a>
+                <div class="bt_del">del</div>
+                <div class="bt_add">add</div>
+	    </form>
+	    <div class="stop">stop</div><div class="start">start</div>
+        </div>
+        <div>
+            <div id="div_plot" class="div_plot"></div>
+        </div>
+    </body>
+<script>
+    /*********  кнопки старт/стоп  ************/
+    var str = 0;
+    var s11;
+    $('.start').click(function () {
+    	console.log('start');
+    	if (str == 0) {
+    		$.ajax({
+        		url: '/start/',
+        		dataType: 'json',
+        		success: function(data){
+        		//console.log(data);
+        	       		 }
+        	});
+        	$.ajax({
+        		url: '/insert/',
+        		dataType: 'json',
+        		success: function(data){
+        				s11 = data[0];
+        	       		 }
+        	});
+    		str = 1;
+    	};
+    });
+    $('.stop').click(function () {
+    	$.ajax({
+        	url: '/stop/',
+        	dataType: 'json',
+        	success: function(data){
+        			console.log(data);
+        		 }
+        });
+    	str = 0;
+    });
+
+    /*******  график зрения  *********/
+    var n = 60;
+    for (var i = 0; i < n; i++) {
+        var elem = document.getElementById('div_plot');
+        var div = document.createElement('div');
+        div.className = "div_band";
+        elem.parentNode.appendChild(div, elem);
+        var plot_x = 1200 + 198 / (n - 1) * i + 'px';
+        var plot_y = 100 + 'px';
+        var plot_top = 400 + 'px';
+        div.style.left = plot_x;
+        div.style.height = plot_y;
+        div.style.top = plot_top;
+    };
+    //document.getElementById('div_plot').parentNode.firstElementChild.remove();
+    /*var n = 6;
+    var s11;
+    $('.stop').click(function () {
+        $.ajax({
+            url: '/json_plot/',
+            dataType: 'json',
+            success: function (data) {
+                s11 = data[0];
+            }
+        });
+        for (var i = 0; i < n; i++) {
+            var elem = document.getElementById('div_plot');
+            var div = document.createElement('div');
+            div.className = "div_band";
+            elem.parentNode.appendChild(div, elem);
+            var plot_x = 1200 + 198 / (n - 1) * i + 'px';
+            var plot_y = s11[i * 2] / 100 * 200 + 'px';
+            var plot_top = 300 + 200 - s11[i * 2] / 100 * 200 + 'px';
+            div.style.left = plot_x;
+            div.style.height = plot_y;
+            div.style.top = plot_top;
+            console.log(i,plot_top)
+        }
+    });*/
+
+    /*******  начальные данные  *********/
+    $(".div_2").rotate(90);
+    var xx = 0;
+    var yy = 0;
+    var rr = 0;
+    var pp11 = -1;
+    var pp12 = -1;
+    var pp21 = -1;
+    var pp22 = -1;
+    var pp31 = -1;
+    var pp32 = -1;
+    var pp41 = -1;
+    var pp42 = -1;
+    $.ajax({
+        url: '/json/',
+        dataType: 'json',
+        success: function(data){
+                     xx = data[0].xxx;
+                 }
+    });
+    $.ajax({
+        url: '/json_y/',
+        dataType: 'json',
+        success: function(data){
+                     yy = data[0].yyy;
+                 }
+    });
+     $.ajax({
+        url: '/json_r/',
+        dataType: 'json',
+        success: function(data){
+                     rr = data[0].rrr;
+                 }
+    });
+
+    /*********  основной цикл  ************/
+    setInterval(function () {
+        var s11;
+        if (str == 1) {
+            $.ajax({
+                url: '/json/',
+                dataType: 'json',
+                success: function (data) {
+                    xx = data[0].xxx;
+                }
+            });
+            $.ajax({
+                url: '/json_y/',
+                dataType: 'json',
+                success: function (data) {
+                    yy = data[0].yyy;
+                }
+            });
+            $.ajax({
+                url: '/json_r/',
+                dataType: 'json',
+                success: function (data) {
+                    rr = data[0].rrr;
+                }
+            });
+            $.ajax({
+                url: '/json_p/',
+                dataType: 'json',
+                success: function (data) {
+                    pp11 = data[0].x1;
+                    pp12 = data[0].y1;
+                    pp21 = data[0].x2;
+                    pp22 = data[0].y2;
+                    pp31 = data[0].x3;
+                    pp32 = data[0].y3;
+                    pp41 = data[0].x4;
+                    pp42 = data[0].y4;
+                    s11 = data[0].plot[0];
+                }
+            });
+            /*$.ajax({
+                url: '/json_plot/',
+                dataType: 'json',
+                success: function (data) {
+                    s11 = data[0];
+                }
+            });*/
+            $(".div_2").css({top: yy, left: xx});
+            $(".div_201").css({top: pp12, left: pp11});
+            $(".div_202").css({top: pp22, left: pp21});
+            $(".div_203").css({top: pp32, left: pp31});
+            $(".div_204").css({top: pp42, left: pp41});
+            $(".div_2").rotate(rr + 90);
+            var n = 60;
+            if (s11 !== undefined && s11 !== null) {
+                for (var i = 0; i < n; i++) {
+                    var elem = document.getElementById('div_plot').parentNode.children;
+                    var div = elem[i+1];
+                    var plot_y = s11[i * 2]/1200*200 + 'px';
+                    var plot_top = 300 + 200 - s11[i * 2]/1200*200 + 'px';
+                    div.style.height = plot_y;
+                    div.style.top = plot_top;
+                };
+            } else {
+                $.ajax({
+                    url: '/json_plot/',
+                    dataType: 'json',
+                    success: function (data) {
+                        s11 = data[0];
+                        for (var i = 0; i < n; i++) {
+                            var elem = document.getElementById('div_plot').parentNode.children;
+                            var div = elem[i+1];
+                            var plot_y = s11[i * 2]/1200*200 + 'px';
+                            var plot_top = 300 + 200 - s11[i * 2]/1200*200 + 'px';
+                            div.style.height = plot_y;
+                            div.style.top = plot_top;
+                        };
+                    }
+                });
+
+            };
+        };
+    }, 100);
+
+    /********  события кнопок добавления/удаления еды  ****/
+    $('.bt_add').click(function () {
+        var elem = document.getElementById('first');
+        var div = document.createElement('div');
+        div.className = "div_2_1";
+        elem.parentNode.appendChild(div, elem);
+        var in_x = document.getElementsByClassName('in_x')[0].value;
+        var in_y = document.getElementsByClassName('in_y')[0].value;
+        var in_x_t = in_x + 'px';
+        var in_y_t = in_y + 'px';
+        div.style.left = in_x_t;
+        div.style.top = in_y_t;
+    });
+    $('.bt_del').click(function () {
+        if (document.getElementById('first').parentNode.children.length > 1) {
+            document.getElementById('first').parentNode.lastElementChild.remove();
+        }
+    });
+
+</script>
+</html>

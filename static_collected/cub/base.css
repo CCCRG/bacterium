@@ -1,0 +1,132 @@
+
+.div_1{
+	background-color:rgba(0, 0, 0, 1);
+        width:1020px;
+        height:830px;
+        border: 4px solid green;
+        position:absolute;
+	}
+
+.div_2{
+	background-color:rgba(255, 0, 0, 0.8);
+        width:20px;
+        height:30px;
+        position: absolute;
+        left:0px;
+        top:0px;
+	}
+.div_2_1{
+	background-color:rgba(225, 255, 0, 1);
+        width:10px;
+        height:10px;
+        left:0px;
+        top:0px;
+        position: absolute;
+	}
+.div_201{
+	background-color:rgba(225, 255, 0, 1);
+        width:2px;
+        height:2px;
+        left:10px;
+        top:10px;
+        position: absolute;
+	}
+.div_202{
+	background-color:rgba(225, 255, 0, 1);
+        width:2px;
+        height:2px;
+        left:20px;
+        top:20px;
+        position: absolute;
+	}
+.div_203{
+	background-color:rgba(225, 255, 0, 1);
+        width:2px;
+        height:2px;
+        left:30px;
+        top:30px;
+        position: absolute;
+	}
+.div_204{
+	background-color:rgba(225, 255, 0, 1);
+        width:2px;
+        height:2px;
+        left:40px;
+        top:40px;
+        position: absolute;
+	}
+.div_plot {
+    background-color: rgba(0, 0, 0, 1);
+    width: 200px;
+    height: 200px;
+    left: 1200px;
+    top: 300px;
+    position: absolute;
+}
+.div_band {
+     background-color: rgb(255, 0, 38);
+    width: 1px;
+    height: 0.1px;
+    left: 1200px;
+    top: 400px;
+    position: absolute;
+}
+
+
+.div_3{
+	background-color:rgba(255, 255, 255, 1);
+        width:20px;
+        height:4px;
+	}
+
+.div_menu{
+	background-color:rgba(0, 255, 0, 0.3);
+	left:1100px;
+        top:0px;
+        width:500px;
+        height:830px;
+	position: relative;
+	}
+	
+.in_x{
+        width:80px;
+        height:20px;
+	}
+.in_y{
+        width:80px;
+        height:20px;
+	}
+	
+.bt_add{
+	background-color:rgba(0, 100, 0, 0.3);
+        width:60px;
+        height:20px;
+        float:right;
+        padding:2px 2px 2px 20px;
+        cursor:default;
+	}
+.bt_del{
+	background-color:rgba(0, 200, 0, 0.3);
+        width:60px;
+        height:20px;
+        float:right;
+        padding:2px 2px 2px 20px;
+        cursor:default;
+	}
+	
+.start{
+	background-color:rgba(255, 0, 0, 0.3);
+        width:60px;
+        height:20px;
+        float:right;
+        padding:2px 2px 2px 20px;
+        cursor:default;
+	}
+.stop{
+	background-color:rgba(0, 0, 255, 0.3);
+        width:60px;
+        height:20px;
+        float:right;
+        padding:2px 2px 2px 20px;
+        cursor:default;
+	}
