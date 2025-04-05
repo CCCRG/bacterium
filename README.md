@@ -13,5 +13,5 @@ python manage.py collectstatic
 
 
 Откатиться до нужного коммита, чтобы почистить историю коммитов и объединить в боллее понятный коммит:  
-git reset --soft 08880f507e35ac299a55e468a35897c658059d5f
+git reset --soft 08880f507e35ac299a55e468a35897c658059d5f  
 git push origin main --force
