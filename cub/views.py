@@ -16,6 +16,12 @@ from typing import Any, Sequence
 from psycopg import Cursor
 from cub.forms import EdgeForm
 from cub.models import Edge
+from cub.models import Controler
+from cub.models import Position
+from cub.models import Dots
+from cub.models import Vision
+from django.core import serializers
+
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -34,59 +40,60 @@ def hello(request):
         return render(request, "cub/cub.html", {"form": form})
 
 def plot(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    cur = conn.cursor()
-    cur.execute("select s1,c1,s2,c2,s3,c3,s4,c4,s5,c5,s6,c6,s7,c7,s8,c8,s9,c9,s10,c10,s11,c11,s12,c12,s13,c13,s14,c14,s15,c15,s16,c16,s17,c17,s18,c18,s19,c19,s20,c20,s21,c21,s22,c22,s23,c23,s24,c24,s25,c25,s26,c26,s27,c27,s28,c28,s29,c29,s30,c30,s31,c31,s32,c32,s33,c33,s34,c34,s35,c35,s36,c36,s37,c37,s38,c38,s39,c39,s40,c40,s41,c41,s42,c42,s43,c43,s44,c44,s45,c45,s46,c46,s47,c47,s48,c48,s49,c49,s50,c50,s51,c51,s52,c52,s53,c53,s54,c54,s55,c55,s56,c56,s57,c57,s58,c58,s59,c59,s60,c60 from eyes where num = (SELECT MAX(num) FROM eyes)")
-    conn.commit()
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
-    return HttpResponse(json.dumps(data))
+    if Vision.objects.exists():
+        obj_vision = Vision.objects.last()
+    else:
+        obj_vision, created = Vision.objects.get_or_create()
+    list = []
+    for key, value in obj_vision.__dict__.items():
+        list.append(value)
+    list.pop(0)
+    list.pop(0)
+    return HttpResponse(json.dumps(list))
+
 
 def start(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    cur = conn.cursor()
-    cur.execute("update control set value = 1 where num = 1")
-    conn.commit()
-    cur.execute("select * from control where num = 1")
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
-    st = data[0][2]
-    return HttpResponse(json.dumps(data))
+    obj_state, created = Controler.objects.get_or_create(
+        name = "state",
+        description = "with controller state you can start or stop bacterial",
+    )
+    if obj_state.value != 1:
+        obj_state.value = 1
+        obj_state.save()
+    data = serializers.serialize('json', [ obj_state, ])
+    return HttpResponse(data)
 
 def stop(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    cur = conn.cursor()
-    cur.execute("update control set value = 0 where num = 1")
-    conn.commit()
-    cur.execute("select x1, y1, x2, y2 from stena")
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
-    return HttpResponse(json.dumps(data[0]))
+    obj_state, created = Controler.objects.get_or_create(
+        name = "state",
+        description = "with controller state you can start or stop bacterial",
+    )
+    if obj_state.value != 0:
+        obj_state.value = 0
+        obj_state.save()
+    data = serializers.serialize('json', [ obj_state, ])
+    return HttpResponse(data)
 
 
 def points(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    # cur = conn.cursor(pymysql.cursors.DictCursor)
-    cur = conn.cursor(row_factory=DictRowFactory)
-    cur.execute("SELECT * FROM test where num = (SELECT MAX(num) FROM test)")
-    data = cur.fetchall()
-    cur.close()
-    #conn.close()
-
-    cur = conn.cursor()
-    cur.execute("select s1,c1,s2,c2,s3,c3,s4,c4,s5,c5,s6,c6,s7,c7,s8,c8,s9,c9,s10,c10,s11,c11,s12,c12,s13,c13,s14,c14,s15,c15,s16,c16,s17,c17,s18,c18,s19,c19,s20,c20,s21,c21,s22,c22,s23,c23,s24,c24,s25,c25,s26,c26,s27,c27,s28,c28,s29,c29,s30,c30,s31,c31,s32,c32,s33,c33,s34,c34,s35,c35,s36,c36,s37,c37,s38,c38,s39,c39,s40,c40,s41,c41,s42,c42,s43,c43,s44,c44,s45,c45,s46,c46,s47,c47,s48,c48,s49,c49,s50,c50,s51,c51,s52,c52,s53,c53,s54,c54,s55,c55,s56,c56,s57,c57,s58,c58,s59,c59,s60,c60 from eyes where num = (SELECT MAX(num) FROM eyes)")
-    conn.commit()
-    data2 = cur.fetchall()
-    cur.close()
-    conn.close()
-    data[0]['plot'] = data2
+    obj_dots, created = Dots.objects.get_or_create()
+    data_json = serializers.serialize('json', [ obj_dots, ])
+    data = json.loads(data_json)
+    # obj_vision, created = Vision.objects.get_or_create()
+    if Vision.objects.exists():
+        obj_vision = Vision.objects.last()
+    else:
+        obj_vision, created = Vision.objects.get_or_create()
+    # data2_json = serializers.serialize('json', [ obj_vision ])
+    # data2 = json.loads(data2_json)
+    
+    list = []
+    for key, value in obj_vision.__dict__.items():
+        list.append(value)
+    list.pop(0)
+    list.pop(0)
+    # return HttpResponse(json.dumps(list))
+    data[0]['plot'] = list
 
     return HttpResponse(json.dumps(data))
 
@@ -95,38 +102,23 @@ def insert(request):
     x = 400
     y = 400
     r = 0
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost",keepalives=1,
-                        keepalives_idle=130,
-                        keepalives_interval=20,
-                        keepalives_count=30)
-    cur = conn.cursor()
-    cur.execute("select x1, y1, x2, y2 from stena")
-    stxy = cur.fetchall()
-    cur.close()
-    conn.close()
+    stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
     dx = 0
     dy = 0
     dr = 0
     st = 1
     rand = 0
+    pos = Position.objects.get()
+    dots = Dots.objects.get()
     while st == 1:
-        conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost", keepalives=1,
-                          keepalives_idle=130,
-                          keepalives_interval=20,
-                          keepalives_count=30)
-        cur = conn.cursor()
-        cur.execute("update numbers set xxx = %s where num = 299", [round(x)])
-        conn.commit()
-        cur.execute("update numbers_y set yyy = %s where num = 244", [round(y)])
-        conn.commit()
-        cur.execute("update rotors set rrr = %s where num = 1", [r])
-        conn.commit()
-        cur.execute("select * from control where num = 1")
-        data = cur.fetchall()
-        cur.close()
-        conn.close()
-        st = data[0][1]
+        time.sleep(0.1)
+        cntr = Controler.objects.get()
+        pos.x = round(x)
+        pos.y = round(y)
+        pos.r = round(r)
+        pos.save()
+        st = cntr.value
+        # st = data[0][1]
         if rand == 0:
             dr = random.randint(-20, 20)
             dx = 0
@@ -166,74 +158,57 @@ def insert(request):
             dy = 0
             dr = 0
 
-        conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost", keepalives=1,
-                          keepalives_idle=130,
-                          keepalives_interval=20,
-                          keepalives_count=30)
-        cur = conn.cursor()
-        #cur.execute("update test set x1 = %e ,y1 = %e ,x2 = %e ,y2 = %e ,x3 = %e ,y3 = %e ,x4 = %e ,y4 = %e ,acrs = %e where num = 1" % ([axy1[0][0]], [axy1[0][1]], [axy1[1][0]], [axy1[1][1]], [axy1[2][0]], [axy1[2][1]], [axy1[3][0]], [axy1[3][1]], [r]))
-        cur.execute(
-            "update test set x1 = %e ,y1 = %e ,x2 = %e ,y2 = %e ,x3 = %e ,y3 = %e ,x4 = %e ,y4 = %e ,acrs = %e where num = 1" % (
-                axy1[0][0], axy1[0][1], axy1[1][0], axy1[1][1], axy1[2][0], axy1[2][1], axy1[3][0], axy1[3][1], r))
-        conn.commit()
-        cur.close()
-        conn.close()
+        dots.x1 = axy1[0][0]
+        dots.y1 = axy1[0][1]
+        dots.x2 = axy1[1][0]
+        dots.y2 = axy1[1][1]
+        dots.x3 = axy1[2][0]
+        dots.y3 = axy1[2][1]
+        dots.x4 = axy1[3][0]
+        dots.y4 = axy1[3][1]
+        dots.save()
         x = x + dx
         y = y + dy
         r = r + dr
         eyes_s(x, y, r)
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost", keepalives=1,
-                      keepalives_idle=130,
-                      keepalives_interval=20,
-                      keepalives_count=30)
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM eyes1 where num = (SELECT MAX(num) FROM eyes1)")
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
+        
+    # conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost", keepalives=1,
+    #                   keepalives_idle=130,
+    #                   keepalives_interval=20,
+    #                   keepalives_count=30)
+    # cur = conn.cursor()
+    # cur.execute("SELECT * FROM eyes1 where num = (SELECT MAX(num) FROM eyes1)")
+    # data = cur.fetchall()
+    # cur.close()
+    # conn.close()
+    
+    data = {"s11":0}
     return HttpResponse(json.dumps(data))
 
 
 def json_1(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    #cur = conn.cursor(pymysql.cursors.RealDictRow)DictCursor
-    cur = conn.cursor(row_factory=DictRowFactory)
-    cur.execute("select * from numbers where num = 299")
-    data = cur.fetchall()
-    #print(json.dumps(cur.fetchall(), indent=2))
-    #data = cur.fetchone()
-    #res = data['xxx']
-    conn.commit()
-    cur.close()
-    conn.close()
-    res = json.dumps(data)
-    return HttpResponse(json.dumps(data))
-
+    obj_position, created = Position.objects.get_or_create(
+        name = "position",
+        description = "This is position bacterium",
+    )
+    data = serializers.serialize('json', [ obj_position, ])
+    return HttpResponse(data)
 
 def json_y(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    #cur = conn.cursor()
-    cur = conn.cursor(row_factory=DictRowFactory)
-    cur.execute("select * from numbers_y where num = 244")
-    data = cur.fetchall()
-    conn.commit()
-    cur.close()
-    conn.close()
-    return HttpResponse(json.dumps(data))
-
+    obj_position, created = Position.objects.get_or_create(
+        name = "position",
+        description = "This is position bacterium",
+    )
+    data = serializers.serialize('json', [ obj_position, ])
+    return HttpResponse(data)
 
 def json_r(request):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    #cur = conn.cursor()
-    cur = conn.cursor(row_factory=DictRowFactory)
-    cur.execute("select * from rotors where num = 1")
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
-    return HttpResponse(json.dumps(data))
+    obj_position, created = Position.objects.get_or_create(
+        name = "position",
+        description = "This is position bacterium",
+    )
+    data = serializers.serialize('json', [ obj_position, ])
+    return HttpResponse(data)
 
 
 def distance(x1, y1, x2, y2, x3, y3):
@@ -297,13 +272,7 @@ def across(x1, y1, x2, y2, x3, y3, x4, y4):
     return s
 
 def eyes_s(x,y,r):
-    #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
-    conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-    cur = conn.cursor()
-    cur.execute("select x1, y1, x2, y2 from stena")
-    stxy = cur.fetchall()
-    cur.execute("SELECT * FROM test where num = (SELECT MAX(num) FROM test)")
-    bxy = cur.fetchall()
+    stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
     script1 = 'insert into eyes('
     script2 = 'values ('
     n = 59
@@ -315,12 +284,12 @@ def eyes_s(x,y,r):
     ds1 = []
     ds2 = []
     sss = []
+    data_dict = {}
     for i in range(0, n+1):
         ds1.append(rotors(x + 10, y + 15, x + 25, y + 5 + s1 * i / n, r))
         ds2.append(rotors(x + 10, y + 15, x + 25 + s3, y + 5 - s3 / 2 + s2 * i / n, r))
     for i in range(0, n+1):
         rrr = []
-
         for j in range(0,len(stxy)):
             xy = distance_e(ds1[i][0],ds1[i][1],ds2[i][0],ds2[i][1],stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3])
             if xy[0] - ds1[i][0] > 0 and ds2[i][0] - ds1[i][0] > 0 or xy[0] - ds1[i][0] < 0 and ds2[i][0] - ds1[i][0] < 0 or xy[1] - ds1[i][1] > 0 and ds2[i][1] - ds1[i][1] > 0 or xy[1] - ds1[i][1] < 0 and ds2[i][1] - ds1[i][1] < 0:
@@ -330,15 +299,19 @@ def eyes_s(x,y,r):
             sss.append(min(rrr))
         else:
             sss.append(0)
+            
+        pref = 's'
+        if i < 10:
+            pref = 's0'
+            
+        data_dict[pref + str(i)] = sss[i]
         script1 = script1 + 's' + str(i+1) + ',' + 'c' + str(i+1) + ','
         script2 = script2 + str(sss[i]) + ','
         script2 = script2 + str(0) + ','
     script1 = script1[0:len(script1) - 1] + ') '
     script2 = script2[0:len(script2) - 1] + ')'
     script = script1 + script2 + ';'
-    print('script')
-    cur.execute(script)
-    conn.commit()
+    Vision.objects.create(**data_dict)
     return script
 
 def rotors(x0, y0, x, y, r):
