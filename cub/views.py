@@ -16,7 +16,6 @@ from typing import Any, Sequence
 from psycopg import Cursor
 from cub.forms import EdgeForm
 from cub.models import Edge
-from django.forms import modelformset_factory
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -26,15 +25,13 @@ class DictRowFactory:
         return dict(zip(self.fields, values))
 
 def hello(request):
-    EdgeFormSet = modelformset_factory(Edge, fields=('__all__'))
+    form = EdgeForm(request.POST or None)
     if request.method == "POST":
-        formset = EdgeFormSet(request.POST, request.FILES)
-        if formset.is_valid():
-            formset.save()
+        if form.is_valid():
+            form.save()
             return redirect("cub")
     else:
-        formset = EdgeFormSet()
-    return render(request, "cub/cub.html", {"formset": formset})
+        return render(request, "cub/cub.html", {"form": form})
 
 def plot(request):
     #conn = pymysql.connect(host='localhost', user='root', passwd='fdlZm6vC', db='db_cub')
