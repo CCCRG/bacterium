@@ -29,7 +29,12 @@
                 <a> (set eats)</a>
                 <div class="bt_del">del</div>
                 <div class="bt_add">add</div>
-	    </form>
+	        </form>
+            <form method="POST" class="log-form">
+                {% csrf_token %}
+                {{ formset.as_p }}
+                <button type="submit" class="save btn btn-default">Log</button>
+            </form>
 	    <div class="stop">stop</div><div class="start">start</div>
         </div>
         <div>
