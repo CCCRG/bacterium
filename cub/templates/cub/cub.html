@@ -63,13 +63,6 @@
         		//console.log(data);
         	       		 }
         	});
-        	$.ajax({
-        		url: '/insert/',
-        		dataType: 'json',
-        		success: function(data){
-        				s11 = data[0];
-        	       		 }
-        	});
     		str = 1;
     	};
     });
@@ -159,7 +152,7 @@
                 div.style.top = plot_top;
             }; 
         };
-    }, 120);
+    }, 100);
 
     /********  события кнопок добавления/удаления еды  ****/
     $('.bt_add').click(function () {

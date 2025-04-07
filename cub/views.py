@@ -21,6 +21,7 @@ from cub.models import Position
 from cub.models import Dots
 from cub.models import Vision
 from django.core import serializers
+from threading import Thread
 
 
 class DictRowFactory:
@@ -39,19 +40,6 @@ def hello(request):
     else:
         return render(request, "cub/cub.html", {"form": form})
 
-def plot(request):
-    if Vision.objects.exists():
-        obj_vision = Vision.objects.last()
-    else:
-        obj_vision, created = Vision.objects.get_or_create()
-    list = []
-    for key, value in obj_vision.__dict__.items():
-        list.append(value)
-    list.pop(0)
-    list.pop(0)
-    return HttpResponse(json.dumps(list))
-
-
 def start(request):
     obj_state, created = Controler.objects.get_or_create(
         name = "state",
@@ -61,6 +49,9 @@ def start(request):
         obj_state.value = 1
         obj_state.save()
     data = serializers.serialize('json', [ obj_state, ])
+    t = Thread(target=insert, args=(15, ))
+    t.daemon = True
+    t.start()
     return HttpResponse(data)
 
 def stop(request):
@@ -74,8 +65,8 @@ def stop(request):
     data = serializers.serialize('json', [ obj_state, ])
     return HttpResponse(data)
 
-async def insert(request):
-    data = {"s11":0}
+def insert(inter):
+    data = {'a': inter}
     x = 400
     y = 400
     r = 0
@@ -88,7 +79,7 @@ async def insert(request):
     pos = Position.objects.get()
     dots = Dots.objects.get()
     while st == 1:
-        time.sleep(0.1)
+        time.sleep(0.070)
         cntr = Controler.objects.get()
         pos.x = round(x)
         pos.y = round(y)
@@ -149,9 +140,10 @@ async def insert(request):
         r = r + dr
         eyes_s(x, y, r)
         
-    return HttpResponse(json.dumps(data))
+    return HttpResponse(data)
 
 def json_1(request):
+    # time.sleep(0.5)
     all_json = {}
     obj_position, created = Position.objects.get_or_create(
         name = "position",
