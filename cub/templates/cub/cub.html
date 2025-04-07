@@ -29,7 +29,12 @@
                 <a> (set eats)</a>
                 <div class="bt_del">del</div>
                 <div class="bt_add">add</div>
-	    </form>
+	        </form>
+            <form method="POST" class="log-form">
+                {% csrf_token %}
+                {{ form }}
+                <button type="submit" class="save btn btn-default">Add edge</button>
+            </form>
 	    <div class="stop">stop</div><div class="start">start</div>
         </div>
         <div>
@@ -37,9 +42,17 @@
         </div>
     </body>
 <script>
-    /*********  кнопки старт/стоп  ************/
     var str = 0;
     var s11;
+    $.ajax({
+        url: '/stop/',
+        dataType: 'json',
+        success: function(data){
+                console.log(data);
+             }
+    });
+    str = 0;
+    /*********  кнопки старт/стоп  ************/
     $('.start').click(function () {
     	console.log('start');
     	if (str == 0) {
@@ -128,21 +141,21 @@
         url: '/json/',
         dataType: 'json',
         success: function(data){
-                     xx = data[0].xxx;
+                     xx = data[0].fields.x;
                  }
     });
     $.ajax({
         url: '/json_y/',
         dataType: 'json',
         success: function(data){
-                     yy = data[0].yyy;
+                     yy = data[0].fields.y;
                  }
     });
      $.ajax({
         url: '/json_r/',
         dataType: 'json',
         success: function(data){
-                     rr = data[0].rrr;
+                     rr = data[0].fields.r;
                  }
     });
 
@@ -154,36 +167,36 @@
                 url: '/json/',
                 dataType: 'json',
                 success: function (data) {
-                    xx = data[0].xxx;
+                    xx = data[0].fields.x;
                 }
             });
             $.ajax({
                 url: '/json_y/',
                 dataType: 'json',
                 success: function (data) {
-                    yy = data[0].yyy;
+                    yy = data[0].fields.y;
                 }
             });
             $.ajax({
                 url: '/json_r/',
                 dataType: 'json',
                 success: function (data) {
-                    rr = data[0].rrr;
+                    rr = data[0].fields.r;
                 }
             });
             $.ajax({
                 url: '/json_p/',
                 dataType: 'json',
                 success: function (data) {
-                    pp11 = data[0].x1;
-                    pp12 = data[0].y1;
-                    pp21 = data[0].x2;
-                    pp22 = data[0].y2;
-                    pp31 = data[0].x3;
-                    pp32 = data[0].y3;
-                    pp41 = data[0].x4;
-                    pp42 = data[0].y4;
-                    s11 = data[0].plot[0];
+                    pp11 = data[0].fields.x1;
+                    pp12 = data[0].fields.y1;
+                    pp21 = data[0].fields.x2;
+                    pp22 = data[0].fields.y2;
+                    pp31 = data[0].fields.x3;
+                    pp32 = data[0].fields.y3;
+                    pp41 = data[0].fields.x4;
+                    pp42 = data[0].fields.y4;
+                    s11 = data[0].plot;
                 }
             });
             /*$.ajax({
@@ -214,7 +227,7 @@
                     url: '/json_plot/',
                     dataType: 'json',
                     success: function (data) {
-                        s11 = data[0];
+                        s11 = data;
                         for (var i = 0; i < n; i++) {
                             var elem = document.getElementById('div_plot').parentNode.children;
                             var div = elem[i+1];
@@ -228,7 +241,7 @@
 
             };
         };
-    }, 100);
+    }, 120);
 
     /********  события кнопок добавления/удаления еды  ****/
     $('.bt_add').click(function () {

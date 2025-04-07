@@ -10,14 +10,27 @@ services:
       - 8000:8000
 
   postgres:
-    image: postgres:13.3
+    image: postgres:14
     container_name: ${APP_NAME}-postgres
     volumes:
       - ./data_db:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_APP_USER}
       POSTGRES_PASSWORD: ${DB_APP_PASSWORD}
-      POSTGRES_DB: ${APP_NAME}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
+    restart: unless-stopped
+
+  postgres_old:
+    image: postgres:13.3
+    container_name: ${APP_NAME}-postgres_old
+    volumes:
+      - ./data_db_old:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_APP_USER}
+      POSTGRES_PASSWORD: ${DB_APP_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5436:5432"
     restart: unless-stopped

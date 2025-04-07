@@ -130,3 +130,7 @@
         padding:2px 2px 2px 20px;
         cursor:default;
 	}
+
+input[name=message] {
+        width: 10%;
+    }
