@@ -74,31 +74,8 @@ def stop(request):
     data = serializers.serialize('json', [ obj_state, ])
     return HttpResponse(data)
 
-
-def points(request):
-    obj_dots, created = Dots.objects.get_or_create()
-    data_json = serializers.serialize('json', [ obj_dots, ])
-    data = json.loads(data_json)
-    # obj_vision, created = Vision.objects.get_or_create()
-    if Vision.objects.exists():
-        obj_vision = Vision.objects.last()
-    else:
-        obj_vision, created = Vision.objects.get_or_create()
-    # data2_json = serializers.serialize('json', [ obj_vision ])
-    # data2 = json.loads(data2_json)
-    
-    list = []
-    for key, value in obj_vision.__dict__.items():
-        list.append(value)
-    list.pop(0)
-    list.pop(0)
-    # return HttpResponse(json.dumps(list))
-    data[0]['plot'] = list
-
-    return HttpResponse(json.dumps(data))
-
-
-def insert(request):
+async def insert(request):
+    data = {"s11":0}
     x = 400
     y = 400
     r = 0
@@ -172,44 +149,46 @@ def insert(request):
         r = r + dr
         eyes_s(x, y, r)
         
-    # conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost", keepalives=1,
-    #                   keepalives_idle=130,
-    #                   keepalives_interval=20,
-    #                   keepalives_count=30)
-    # cur = conn.cursor()
-    # cur.execute("SELECT * FROM eyes1 where num = (SELECT MAX(num) FROM eyes1)")
-    # data = cur.fetchall()
-    # cur.close()
-    # conn.close()
-    
-    data = {"s11":0}
     return HttpResponse(json.dumps(data))
 
-
 def json_1(request):
+    all_json = {}
     obj_position, created = Position.objects.get_or_create(
         name = "position",
         description = "This is position bacterium",
     )
-    data = serializers.serialize('json', [ obj_position, ])
-    return HttpResponse(data)
+    obj_dots, created = Dots.objects.get_or_create()
+    data_json = serializers.serialize('json', [ obj_dots, ])
+    data = json.loads(data_json)
 
-def json_y(request):
-    obj_position, created = Position.objects.get_or_create(
-        name = "position",
-        description = "This is position bacterium",
-    )
-    data = serializers.serialize('json', [ obj_position, ])
-    return HttpResponse(data)
+    if Vision.objects.exists():
+        obj_vision = Vision.objects.last()
+    else:
+        obj_vision, created = Vision.objects.get_or_create()
+    
+    list = []
+    for key, value in obj_vision.__dict__.items():
+        list.append(value)
+    list.pop(0)
+    list.pop(0)
 
-def json_r(request):
-    obj_position, created = Position.objects.get_or_create(
-        name = "position",
-        description = "This is position bacterium",
-    )
-    data = serializers.serialize('json', [ obj_position, ])
-    return HttpResponse(data)
+    all_json['x'] = obj_position.x
+    all_json['y'] = obj_position.y
+    all_json['r'] = obj_position.r
+    all_json['plot'] = list
+    all_json['dots_x1'] = obj_dots.x1
+    all_json['dots_x2'] = obj_dots.x2
+    all_json['dots_x3'] = obj_dots.x3
+    all_json['dots_x4'] = obj_dots.x4
+    all_json['dots_y1'] = obj_dots.y1
+    all_json['dots_y2'] = obj_dots.y2
+    all_json['dots_y3'] = obj_dots.y3
+    all_json['dots_y4'] = obj_dots.y4
+    all_json['dots_r'] = obj_dots.r
 
+    #data = serializers.serialize('json', [ obj_position, ])
+    data = json.dumps(all_json)
+    return HttpResponse(data)
 
 def distance(x1, y1, x2, y2, x3, y3):
     x1 = float(x1)
