@@ -63,13 +63,6 @@
         		//console.log(data);
         	       		 }
         	});
-        	$.ajax({
-        		url: '/insert/',
-        		dataType: 'json',
-        		success: function(data){
-        				s11 = data[0];
-        	       		 }
-        	});
     		str = 1;
     	};
     });
@@ -98,37 +91,12 @@
         div.style.height = plot_y;
         div.style.top = plot_top;
     };
-    //document.getElementById('div_plot').parentNode.firstElementChild.remove();
-    /*var n = 6;
-    var s11;
-    $('.stop').click(function () {
-        $.ajax({
-            url: '/json_plot/',
-            dataType: 'json',
-            success: function (data) {
-                s11 = data[0];
-            }
-        });
-        for (var i = 0; i < n; i++) {
-            var elem = document.getElementById('div_plot');
-            var div = document.createElement('div');
-            div.className = "div_band";
-            elem.parentNode.appendChild(div, elem);
-            var plot_x = 1200 + 198 / (n - 1) * i + 'px';
-            var plot_y = s11[i * 2] / 100 * 200 + 'px';
-            var plot_top = 300 + 200 - s11[i * 2] / 100 * 200 + 'px';
-            div.style.left = plot_x;
-            div.style.height = plot_y;
-            div.style.top = plot_top;
-            console.log(i,plot_top)
-        }
-    });*/
-
     /*******  начальные данные  *********/
     $(".div_2").rotate(90);
     var xx = 0;
     var yy = 0;
     var rr = 0;
+    var s11 = [];
     var pp11 = -1;
     var pp12 = -1;
     var pp21 = -1;
@@ -141,71 +109,33 @@
         url: '/json/',
         dataType: 'json',
         success: function(data){
-                     xx = data[0].fields.x;
+                     xx = data.x;
+                     yy = data.y;
+                     rr = data.r;
+                     s11 = data.plot;
                  }
     });
-    $.ajax({
-        url: '/json_y/',
-        dataType: 'json',
-        success: function(data){
-                     yy = data[0].fields.y;
-                 }
-    });
-     $.ajax({
-        url: '/json_r/',
-        dataType: 'json',
-        success: function(data){
-                     rr = data[0].fields.r;
-                 }
-    });
-
     /*********  основной цикл  ************/
     setInterval(function () {
-        var s11;
         if (str == 1) {
             $.ajax({
                 url: '/json/',
                 dataType: 'json',
                 success: function (data) {
-                    xx = data[0].fields.x;
+                    xx = data.x;
+                    yy = data.y;
+                    rr = data.r;
+                    pp11 = data.dots_x1;
+                    pp12 = data.dots_y1;
+                    pp21 = data.dots_x2;
+                    pp22 = data.dots_y2;
+                    pp31 = data.dots_x3;
+                    pp32 = data.dots_y3;
+                    pp41 = data.dots_x4;
+                    pp42 = data.dots_y4;
+                    s11 = data.plot;
                 }
             });
-            $.ajax({
-                url: '/json_y/',
-                dataType: 'json',
-                success: function (data) {
-                    yy = data[0].fields.y;
-                }
-            });
-            $.ajax({
-                url: '/json_r/',
-                dataType: 'json',
-                success: function (data) {
-                    rr = data[0].fields.r;
-                }
-            });
-            $.ajax({
-                url: '/json_p/',
-                dataType: 'json',
-                success: function (data) {
-                    pp11 = data[0].fields.x1;
-                    pp12 = data[0].fields.y1;
-                    pp21 = data[0].fields.x2;
-                    pp22 = data[0].fields.y2;
-                    pp31 = data[0].fields.x3;
-                    pp32 = data[0].fields.y3;
-                    pp41 = data[0].fields.x4;
-                    pp42 = data[0].fields.y4;
-                    s11 = data[0].plot;
-                }
-            });
-            /*$.ajax({
-                url: '/json_plot/',
-                dataType: 'json',
-                success: function (data) {
-                    s11 = data[0];
-                }
-            });*/
             $(".div_2").css({top: yy, left: xx});
             $(".div_201").css({top: pp12, left: pp11});
             $(".div_202").css({top: pp22, left: pp21});
@@ -213,35 +143,16 @@
             $(".div_204").css({top: pp42, left: pp41});
             $(".div_2").rotate(rr + 90);
             var n = 60;
-            if (s11 !== undefined && s11 !== null) {
-                for (var i = 0; i < n; i++) {
-                    var elem = document.getElementById('div_plot').parentNode.children;
-                    var div = elem[i+1];
-                    var plot_y = s11[i * 2]/1200*200 + 'px';
-                    var plot_top = 300 + 200 - s11[i * 2]/1200*200 + 'px';
-                    div.style.height = plot_y;
-                    div.style.top = plot_top;
-                };
-            } else {
-                $.ajax({
-                    url: '/json_plot/',
-                    dataType: 'json',
-                    success: function (data) {
-                        s11 = data;
-                        for (var i = 0; i < n; i++) {
-                            var elem = document.getElementById('div_plot').parentNode.children;
-                            var div = elem[i+1];
-                            var plot_y = s11[i * 2]/1200*200 + 'px';
-                            var plot_top = 300 + 200 - s11[i * 2]/1200*200 + 'px';
-                            div.style.height = plot_y;
-                            div.style.top = plot_top;
-                        };
-                    }
-                });
-
-            };
+            for (var i = 0; i < n; i++) {
+                var elem = document.getElementById('div_plot').parentNode.children;
+                var div = elem[i+1];
+                var plot_y = s11[i * 2]/1200*200 + 'px';
+                var plot_top = 300 + 200 - s11[i * 2]/1200*200 + 'px';
+                div.style.height = plot_y;
+                div.style.top = plot_top;
+            }; 
         };
-    }, 120);
+    }, 100);
 
     /********  события кнопок добавления/удаления еды  ****/
     $('.bt_add').click(function () {
