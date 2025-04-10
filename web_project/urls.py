@@ -20,6 +20,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 
 urlpatterns = [
+    path("chat/", include("chat.urls")),
     path("", include("hello.urls")),
     path("", include("cub.urls")),
     path('admin/', admin.site.urls),
