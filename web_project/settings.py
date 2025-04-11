@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'daphne',
+    'chat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,7 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'hello',
     'cub',
-    'chat',
 ]
 
 MIDDLEWARE = [
@@ -72,6 +72,15 @@ TEMPLATES = [
 
 ASGI_APPLICATION = "web_project.asgi.application"
 #WSGI_APPLICATION = 'web_project.wsgi.application'
+# Channels
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 
 # Database
