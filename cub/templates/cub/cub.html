@@ -57,11 +57,6 @@
         + '/'
     );
 
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        document.querySelector('#chat-log').value += (data.message + '\n');
-    };
-
     chatSocket.onclose = function(e) {
         console.error('Chat socket closed unexpectedly');
     };
@@ -156,26 +151,23 @@
                  }
     });
     /*********  основной цикл  ************/
-    setInterval(function () {
+    chatSocket.onmessage = function(e) {
+        const data_a = JSON.parse(e.data);
+        data = JSON.parse(data_a.message)
+        //document.querySelector('#chat-log').value += (data.message + '\n');
         if (str == 1) {
-            $.ajax({
-                url: '/json/',
-                dataType: 'json',
-                success: function (data) {
-                    xx = data.x;
-                    yy = data.y;
-                    rr = data.r;
-                    pp11 = data.dots_x1;
-                    pp12 = data.dots_y1;
-                    pp21 = data.dots_x2;
-                    pp22 = data.dots_y2;
-                    pp31 = data.dots_x3;
-                    pp32 = data.dots_y3;
-                    pp41 = data.dots_x4;
-                    pp42 = data.dots_y4;
-                    s11 = data.plot;
-                }
-            });
+            xx = data.x;
+            yy = data.y;
+            rr = data.r;
+            pp11 = data.dots_x1;
+            pp12 = data.dots_y1;
+            pp21 = data.dots_x2;
+            pp22 = data.dots_y2;
+            pp31 = data.dots_x3;
+            pp32 = data.dots_y3;
+            pp41 = data.dots_x4;
+            pp42 = data.dots_y4;
+            s11 = data.plot;
             $(".div_2").css({top: yy, left: xx});
             $(".div_201").css({top: pp12, left: pp11});
             $(".div_202").css({top: pp22, left: pp21});
@@ -192,7 +184,7 @@
                 div.style.top = plot_top;
             }; 
         };
-    }, 100);
+    };
 
     /********  события кнопок добавления/удаления еды  ****/
     $('.bt_add').click(function () {
