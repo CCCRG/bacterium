@@ -35,6 +35,7 @@
                 {{ form }}
                 <button type="submit" class="save btn btn-default">Add edge</button>
             </form>
+            <textarea id="chat-log" cols="100" rows="5"></textarea><br>
 	    <div class="stop">stop</div><div class="start">start</div>
         </div>
         <div>
@@ -42,8 +43,47 @@
         </div>
     </body>
 <script>
+
+
     var str = 0;
     var s11;
+    const roomName = 'lobby'//JSON.parse(document.getElementById('room-name').textContent);
+
+    const chatSocket = new WebSocket(
+        'ws://'
+        + window.location.host
+        + '/ws/chat/'
+        + roomName
+        + '/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        document.querySelector('#chat-log').value += (data.message + '\n');
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    //document.querySelector('#chat-message-input').focus();
+    //document.querySelector('#chat-message-input').onkeyup = function(e) {
+    //    if (e.key === 'Enter') {  // enter, return
+    //        document.querySelector('#chat-message-submit').click();
+    //    }
+    //};
+
+    //document.querySelector('#chat-message-submit').onclick = function(e) {
+    //    const messageInputDom = document.querySelector('#chat-message-input');
+    //    const message = messageInputDom.value;
+    //    chatSocket.send(JSON.stringify({
+    //        'message': message
+    //    }));
+    //    messageInputDom.value = '';
+    //};
+
+
+
     $.ajax({
         url: '/stop/',
         dataType: 'json',
