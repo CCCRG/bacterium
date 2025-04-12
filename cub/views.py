@@ -141,8 +141,28 @@ def insert(inter):
         x = x + dx
         y = y + dy
         r = r + dr
-        eyes_s(x, y, r)
-        ddd = json_2()
+        list_plot = eyes_s(x, y, r)
+        
+        all_json = {}
+        all_json['x'] = x
+        all_json['y'] = y
+        all_json['r'] = r
+        all_json['plot'] = list_plot
+        all_json['dots_x1'] = axy1[0][0]
+        all_json['dots_x2'] = axy1[1][0]
+        all_json['dots_x3'] = axy1[2][0]
+        all_json['dots_x4'] = axy1[3][0]
+        all_json['dots_y1'] = axy1[0][1]
+        all_json['dots_y2'] = axy1[1][1]
+        all_json['dots_y3'] = axy1[2][1]
+        all_json['dots_y4'] = axy1[3][1]
+        all_json['dots_r'] = r
+
+        #data = serializers.serialize('json', [ obj_position, ])
+        ddd = json.dumps(all_json)
+        
+        
+        #ddd = json_2()
         async_to_sync(channel_layer.group_send)(
             'chat_lobby',
             {
@@ -154,43 +174,7 @@ def insert(inter):
     return HttpResponse(data)
 
 def json_1(request):
-    # time.sleep(0.5)
-    all_json = {}
-    obj_position, created = Position.objects.get_or_create(
-        name = "position",
-        description = "This is position bacterium",
-    )
-    obj_dots, created = Dots.objects.get_or_create()
-    data_json = serializers.serialize('json', [ obj_dots, ])
-    data = json.loads(data_json)
-
-    if Vision.objects.exists():
-        obj_vision = Vision.objects.last()
-    else:
-        obj_vision, created = Vision.objects.get_or_create()
-    
-    list = []
-    for key, value in obj_vision.__dict__.items():
-        list.append(value)
-    list.pop(0)
-    list.pop(0)
-
-    all_json['x'] = obj_position.x
-    all_json['y'] = obj_position.y
-    all_json['r'] = obj_position.r
-    all_json['plot'] = list
-    all_json['dots_x1'] = obj_dots.x1
-    all_json['dots_x2'] = obj_dots.x2
-    all_json['dots_x3'] = obj_dots.x3
-    all_json['dots_x4'] = obj_dots.x4
-    all_json['dots_y1'] = obj_dots.y1
-    all_json['dots_y2'] = obj_dots.y2
-    all_json['dots_y3'] = obj_dots.y3
-    all_json['dots_y4'] = obj_dots.y4
-    all_json['dots_r'] = obj_dots.r
-
-    #data = serializers.serialize('json', [ obj_position, ])
-    data = json.dumps(all_json)
+    data = json_2
     return HttpResponse(data)
 
 
@@ -296,8 +280,6 @@ def across(x1, y1, x2, y2, x3, y3, x4, y4):
 
 def eyes_s(x,y,r):
     stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
-    script1 = 'insert into eyes('
-    script2 = 'values ('
     n = 59
     s3 = 100
     r_l = 60
@@ -307,6 +289,7 @@ def eyes_s(x,y,r):
     ds1 = []
     ds2 = []
     sss = []
+    scsc = []
     data_dict = {}
     for i in range(0, n+1):
         ds1.append(rotors(x + 10, y + 15, x + 25, y + 5 + s1 * i / n, r))
@@ -328,14 +311,10 @@ def eyes_s(x,y,r):
             pref = 's0'
             
         data_dict[pref + str(i)] = sss[i]
-        script1 = script1 + 's' + str(i+1) + ',' + 'c' + str(i+1) + ','
-        script2 = script2 + str(sss[i]) + ','
-        script2 = script2 + str(0) + ','
-    script1 = script1[0:len(script1) - 1] + ') '
-    script2 = script2[0:len(script2) - 1] + ')'
-    script = script1 + script2 + ';'
+        scsc.append(sss[i])
+        scsc.append(0)
     Vision.objects.create(**data_dict)
-    return script
+    return scsc
 
 def rotors(x0, y0, x, y, r):
     dx = x - x0
