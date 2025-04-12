@@ -14,6 +14,7 @@ import random
 import math
 from typing import Any, Sequence
 from psycopg import Cursor
+
 from cub.forms import EdgeForm
 from cub.models import Edge
 from cub.models import Controler
@@ -22,7 +23,8 @@ from cub.models import Dots
 from cub.models import Vision
 from django.core import serializers
 from threading import Thread
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -78,8 +80,9 @@ def insert(inter):
     rand = 0
     pos = Position.objects.get()
     dots = Dots.objects.get()
+    channel_layer = get_channel_layer()
     while st == 1:
-        time.sleep(0.070)
+        #time.sleep(0.030)
         cntr = Controler.objects.get()
         pos.x = round(x)
         pos.y = round(y)
@@ -138,11 +141,44 @@ def insert(inter):
         x = x + dx
         y = y + dy
         r = r + dr
-        eyes_s(x, y, r)
+        list_plot = eyes_s(x, y, r)
+        
+        all_json = {}
+        all_json['x'] = x
+        all_json['y'] = y
+        all_json['r'] = r
+        all_json['plot'] = list_plot
+        all_json['dots_x1'] = axy1[0][0]
+        all_json['dots_x2'] = axy1[1][0]
+        all_json['dots_x3'] = axy1[2][0]
+        all_json['dots_x4'] = axy1[3][0]
+        all_json['dots_y1'] = axy1[0][1]
+        all_json['dots_y2'] = axy1[1][1]
+        all_json['dots_y3'] = axy1[2][1]
+        all_json['dots_y4'] = axy1[3][1]
+        all_json['dots_r'] = r
+
+        #data = serializers.serialize('json', [ obj_position, ])
+        ddd = json.dumps(all_json)
+        
+        
+        #ddd = json_2()
+        async_to_sync(channel_layer.group_send)(
+            'chat_lobby',
+            {
+                'type': 'chat.message',
+                'message': ddd
+            }
+        )
         
     return HttpResponse(data)
 
 def json_1(request):
+    data = json_2
+    return HttpResponse(data)
+
+
+def json_2():
     # time.sleep(0.5)
     all_json = {}
     obj_position, created = Position.objects.get_or_create(
@@ -180,7 +216,7 @@ def json_1(request):
 
     #data = serializers.serialize('json', [ obj_position, ])
     data = json.dumps(all_json)
-    return HttpResponse(data)
+    return data
 
 def distance(x1, y1, x2, y2, x3, y3):
     x1 = float(x1)
@@ -244,8 +280,6 @@ def across(x1, y1, x2, y2, x3, y3, x4, y4):
 
 def eyes_s(x,y,r):
     stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
-    script1 = 'insert into eyes('
-    script2 = 'values ('
     n = 59
     s3 = 100
     r_l = 60
@@ -255,6 +289,7 @@ def eyes_s(x,y,r):
     ds1 = []
     ds2 = []
     sss = []
+    scsc = []
     data_dict = {}
     for i in range(0, n+1):
         ds1.append(rotors(x + 10, y + 15, x + 25, y + 5 + s1 * i / n, r))
@@ -276,14 +311,10 @@ def eyes_s(x,y,r):
             pref = 's0'
             
         data_dict[pref + str(i)] = sss[i]
-        script1 = script1 + 's' + str(i+1) + ',' + 'c' + str(i+1) + ','
-        script2 = script2 + str(sss[i]) + ','
-        script2 = script2 + str(0) + ','
-    script1 = script1[0:len(script1) - 1] + ') '
-    script2 = script2[0:len(script2) - 1] + ')'
-    script = script1 + script2 + ';'
+        scsc.append(sss[i])
+        scsc.append(0)
     Vision.objects.create(**data_dict)
-    return script
+    return scsc
 
 def rotors(x0, y0, x, y, r):
     dx = x - x0

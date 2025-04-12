@@ -1,13 +1,13 @@
 version: '3.4'
 
 services:
-  project:
-    image: project
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    ports:
-      - 8000:8000
+  # project:
+  #   image: project
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #   ports:
+  #     - 8000:8000
 
   postgres:
     image: postgres:14
@@ -22,15 +22,10 @@ services:
       - "5432:5432"
     restart: unless-stopped
 
-  postgres_old:
-    image: postgres:13.3
-    container_name: ${APP_NAME}-postgres_old
-    volumes:
-      - ./data_db_old:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: ${DB_APP_USER}
-      POSTGRES_PASSWORD: ${DB_APP_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+  redis:
+    container_name: platform-redis
+    hostname: redis
+    restart: always
+    image: redis:7
     ports:
-      - "5436:5432"
-    restart: unless-stopped
+      - "6379:6379"
