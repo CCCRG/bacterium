@@ -1,11 +1,22 @@
 from django.db import models
 from django.utils import timezone
 
+class Food_db(models.Model):
+    top = models.BigIntegerField(default=0)
+    left = models.BigIntegerField(default=0)
+    div_id = models.CharField(max_length=100,unique=True)
+    height = models.BigIntegerField(default=10)
+    width = models.BigIntegerField(default=10)
+    def __str__(self):
+        """Returns a string representation of a controler."""
+        return self.div_id
+
 class Edge(models.Model):
     x1 = models.BigIntegerField()
     y1 = models.BigIntegerField()
     x2 = models.BigIntegerField()
     y2 = models.BigIntegerField()
+    pref_parent_id = models.CharField(max_length=1000)
     def __str__(self):
         """Returns a string representation of a edge."""
         return f"'{str(self.x1)}':'{str(self.y1)}', '{str(self.x2)}':'{str(self.y2)}'"
