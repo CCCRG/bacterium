@@ -16,7 +16,7 @@ class Edge(models.Model):
     y1 = models.BigIntegerField()
     x2 = models.BigIntegerField()
     y2 = models.BigIntegerField()
-    pref_parent_id = models.CharField(max_length=1000)
+    pref_parent_id = models.CharField(max_length=1000,default="")
     def __str__(self):
         """Returns a string representation of a edge."""
         return f"'{str(self.x1)}':'{str(self.y1)}', '{str(self.x2)}':'{str(self.y2)}'"

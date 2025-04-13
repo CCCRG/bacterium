@@ -25,6 +25,7 @@ from django.core import serializers
 from threading import Thread
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from cub.my_classes import Food, Food_db
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -341,3 +342,34 @@ def distance_e(x1, y1, x2, y2, x3, y3, x4, y4):
     r = math.degrees(math.atan(k1))
     xy = [x,y]
     return xy
+
+def get_div_foods(request):
+    result = Food_db.objects.values('top', 'left', 'div_id', 'height', 'width')
+    data_all = []
+    for value in result:
+        data_all.append(value)
+    data = json.dumps(data_all)
+    return HttpResponse(data)
+
+def add_food(request):
+    data_json = request.POST['food']
+    data = json.loads(data_json)
+    res = {'is_new': False}
+    food_obj = Food(data['y'], data['x'], data['div_id'], data['h'], data['w'])
+    if food_obj.is_new:
+        res['is_new'] = True
+    res_json = json.dumps(res)
+    return HttpResponse(res_json)
+
+def del_food(request):
+    f_db = Food_db.objects.last()
+    data_obj = {}
+    if f_db is not None:
+        f = Food(f_db.top, f_db.left, f_db.div_id, f_db.height, f_db.width)
+        data_obj = f.get_div()
+        data_obj['isNull'] = False
+        f.delete()
+    else:
+        data_obj['isNull'] = True
+    data = json.dumps(data_obj)
+    return HttpResponse(data)

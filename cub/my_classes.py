@@ -16,37 +16,48 @@ class Food:
             height = height,
             width = width
         )
-        self.st_top_db, created = Food_db.objects.get_or_create(
-            top = top,
-            left = left,
-            div_id = div_id,
-            height = height,
-            width = width
+        self.is_new = created
+        self.pref_id_str = f"food_{str(self.top)}_{str(self.left)}"
+        self.st_top_db, created = Edge.objects.get_or_create(
+            pref_parent_id = self.pref_id_str,
+            x1 = left,
+            y1 = top,
+            x2 = left + width,
+            y2 = top
         )
-        if not created:
-            self.obj_db.save()
-            data_dict = {}
-            data_dict['pref_parent_id'] = f"'food_'{str(self.top)}'_'{str(self.left)}'"
-            data_dict['x1'] = left
-            data_dict['y1'] = top
-            data_dict['x2'] = left + width
-            data_dict['y2'] = top
-            Edge.objects.create(**data_dict)
-            data_dict['x1'] = left + width
-            data_dict['y1'] = top
-            data_dict['x2'] = left + width
-            data_dict['y2'] = top + height
-            Edge.objects.create(**data_dict)
-            data_dict['x1'] = left + width
-            data_dict['y1'] = top + height
-            data_dict['x2'] = left
-            data_dict['y2'] = top + height
-            Edge.objects.create(**data_dict)
-            data_dict['x1'] = left
-            data_dict['y1'] = top + height
-            data_dict['x2'] = left
-            data_dict['y2'] = top
-            Edge.objects.create(**data_dict)
-     
-    def __del__(self):
+        self.st_right_db, created = Edge.objects.get_or_create(
+            pref_parent_id = self.pref_id_str,
+            x1 = left + width,
+            y1 = top,
+            x2 = left + width,
+            y2 = top + height,
+        )
+        self.st_bottom_db, created = Edge.objects.get_or_create(
+            pref_parent_id = self.pref_id_str,
+            x1 = left + width,
+            y1 = top + height,
+            x2 = left,
+            y2 = top + height,
+        )
+        self.st_left_db, created = Edge.objects.get_or_create(
+            pref_parent_id = self.pref_id_str,
+            x1 = left,
+            y1 = top + height,
+            x2 = left,
+            y2 = top,
+        )
+    def get_div(self):
+        data = {}
+        data['left'] = self.left
+        data['top'] = self.top
+        data['div_id'] = self.pref_id_str
+        data['height'] = self.height
+        data['width'] = self.width
+        return data
+    
+    def delete(self):
         self.obj_db.delete()
+        self.st_bottom_db.delete()
+        self.st_left_db.delete()
+        self.st_right_db.delete()
+        self.st_top_db.delete()
