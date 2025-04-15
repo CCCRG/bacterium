@@ -283,6 +283,7 @@ def across(x1, y1, x2, y2, x3, y3, x4, y4):
 
 def eyes_s(x,y,r):
     # stxy = Edge.objects.filter(pref_parent_id="").values_list("x1", "y1", "x2", "y2")
+    xxx = False
     stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
     n = 59
     s3 = 100
@@ -305,14 +306,17 @@ def eyes_s(x,y,r):
             y1EyeLine = ds1[i][1]
             x2EyeLine = ds2[i][0]
             y2EyeLine = ds2[i][1]
-            xy = distance_e(x1EyeLine,y1EyeLine,x2EyeLine,y2EyeLine,stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3]) # x,y точки пересечения линии датчика зрения и линии стены
-            xCrossWall = round(xy[0], 12)
-            yCrossWall = round(xy[1], 12)
+            xy = [0,0,0]#distance_e(x1EyeLine,y1EyeLine,x2EyeLine,y2EyeLine,stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3]) # x,y точки пересечения линии датчика зрения и линии стены
+            # xCrossWall = round(xy[0], 15)
+            # yCrossWall = round(xy[1], 15)
+            xCrossWall = xy[0]
+            yCrossWall = xy[1]
             x1Wall = min(stxy[j][0],stxy[j][2])
             x2Wall = max(stxy[j][0],stxy[j][2])
             y1Wall = min(stxy[j][1],stxy[j][3])
             y2Wall = max(stxy[j][1],stxy[j][3])
             s = xy[2]
+            dd = 0.0000001
             # if (xCrossWall - x1EyeLine > 0 and x2EyeLine - x1EyeLine > 0 or \
             #    xCrossWall - x1EyeLine < 0 and x2EyeLine - x1EyeLine < 0 or \
             #    yCrossWall - y1EyeLine > 0 and y2EyeLine - y1EyeLine > 0 or \
@@ -320,9 +324,11 @@ def eyes_s(x,y,r):
             #    x1Wall <= xCrossWall and xCrossWall <= x2Wall and \
             #    y1Wall <= yCrossWall and yCrossWall <= y2Wall:
             #     rrr.append(math.sqrt((xCrossWall - x1EyeLine) ** 2 + (yCrossWall - y1EyeLine) ** 2))
-            www = 'i: ' +  str(i) + ', j: ' + str(j) + ', xy: ' +  str(xy)
-            if x1Wall <= xCrossWall and xCrossWall <= x2Wall and \
-               y1Wall <= yCrossWall and yCrossWall <= y2Wall and s > 0:
+            # if xxx:
+            #     www = 'i: ' +  str(i) + ', j: ' + str(j) + ', xy: ' +  str(xy)
+            #     print(www)
+            if x1Wall <= xCrossWall + dd and xCrossWall - dd <= x2Wall and \
+               y1Wall <= yCrossWall + dd and yCrossWall - dd <= y2Wall and s > 0:
                 rrr.append(s)
 
         if len(rrr) > 0:
@@ -335,8 +341,11 @@ def eyes_s(x,y,r):
             pref = 's0'
         
         if sss[i]==0:
-            print(www)
+            # print(www)
             sss[i]=0
+            xxx = True
+        else:
+            xxx = False
             
         
         data_dict[pref + str(i)] = sss[i]

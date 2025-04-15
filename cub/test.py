@@ -6,14 +6,14 @@ from numpy import linalg as LA
 import math
 import numpy as np
 
-x1 = 2
-y1 = 1
-x2 = 1 #3
-y2 = 2 #0.5
-x3 = 0.5
-y3 = 0.5
-x4 = 10
-y4 = 11
+x1 = 500
+y1 = 700
+x2 = 500 #3
+y2 = 600 #0.5
+x3 = 0
+y3 = 0
+x4 = 1020
+y4 = 0
 
 
 x1 = float(x1) + 0.00000000000000001
