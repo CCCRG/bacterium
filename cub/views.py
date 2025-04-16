@@ -306,7 +306,7 @@ def eyes_s(x,y,r):
             y1EyeLine = ds1[i][1]
             x2EyeLine = ds2[i][0]
             y2EyeLine = ds2[i][1]
-            xy = [0,0,0]#distance_e(x1EyeLine,y1EyeLine,x2EyeLine,y2EyeLine,stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3]) # x,y точки пересечения линии датчика зрения и линии стены
+            xy = distance_e(x1EyeLine,y1EyeLine,x2EyeLine,y2EyeLine,stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3]) # x,y точки пересечения линии датчика зрения и линии стены
             # xCrossWall = round(xy[0], 15)
             # yCrossWall = round(xy[1], 15)
             xCrossWall = xy[0]
@@ -377,18 +377,15 @@ def distance_e(x1, y1, x2, y2, x3, y3, x4, y4):
     x = (y01 - y02) / (k2 - k1 + 0.00000000000000001) # x точки пересечения линии датчика зрения и линии стены
     y = k1 * x + y01                                  # y точки пересечения линии датчика зрения и линии стены
 
-    A = np.array([[x1, y1]])
-    B = np.array([[x2, y2]])
-    C = np.array([[x3, y3]])
-    D = np.array([[x4, y4]])
-    O = np.array([[x, y]])
-    AB = A - B
-    AO = A - O
-    nAB = LA.norm(AB)
-    nAO = LA.norm(AO)
-    AO = np.transpose(AO)
-    dotAB_AO = np.dot(AB, AO)
-    dotAB_AO = dotAB_AO[0][0]
+    A = [x1, y1]
+    B = [x2, y2]
+    C = [x3, y3]
+    D = [x4, y4]
+    O = [x, y]
+    AB = [A[0]-B[0], A[1]-B[1]] # A - B
+    AO = [A[0]-O[0], A[1]-O[1]] # A - O
+    nAB = math.sqrt(AB[0]**2 + AB[1]**2) # LA.norm(AB)
+    dotAB_AO = AB[0]*AO[0] + AB[1]*AO[1] # np.dot(AB, AO)
     s = dotAB_AO/nAB
     xys = [x, y, s]
     return xys # расстояние от A до пересечения

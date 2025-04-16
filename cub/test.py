@@ -31,17 +31,15 @@ y02 = y3 - k2 * x3 # постоянное смещение линии стены
 x = (y01 - y02) / (k2 - k1 + 0.00000000000000001) # x точки пересечения линии датчика зрения и линии стены
 y = k1 * x + y01                                  # y точки пересечения линии датчика зрения и линии стены
 
-A = np.array([[x1, y1]])
-B = np.array([[x2, y2]])
-C = np.array([[x3, y3]])
-D = np.array([[x4, y4]])
-O = np.array([[x, y]])
-AB = A - B
-AO = A - O
-nAB = LA.norm(AB)
-nAO = LA.norm(AO)
-AO = np.transpose(AO)
-dotAB_AO = np.dot(AB, AO)
-dotAB_AO = dotAB_AO[0][0]
+A = [x1, y1]
+B = [x2, y2]
+C = [x3, y3]
+D = [x4, y4]
+O = [x, y]
+AB = [A[0]-B[0], A[1]-B[1]] # A - B
+AO = [A[0]-O[0], A[1]-O[1]] # A - O
+nAB = math.sqrt(AB[0]**2 + AB[1]**2) # LA.norm(AB)
+nAO = math.sqrt(AO[0]**2 + AO[1]**2) # LA.norm(AO)
+dotAB_AO = AB[0]*AO[0] + AB[1]*AO[1] # np.dot(AB, AO)
 res = dotAB_AO/nAB
 print(res)
