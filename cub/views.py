@@ -28,6 +28,7 @@ from threading import Thread
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from cub.my_classes import Food, Food_db
+import polygons
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -50,7 +51,7 @@ def start(request):
         name = "state",
         description = "with controller state you can start or stop bacterial",
     )
-    if obj_state.value != 1:
+    if obj_state.value == 0:
         obj_state.value = 1
         obj_state.save()
     data = serializers.serialize('json', [ obj_state, ])
@@ -76,6 +77,17 @@ def insert(inter):
     y = 400
     r = 0
     stxy = Edge.objects.filter(pref_parent_id="").values_list("x1", "y1", "x2", "y2")
+    foods = Food_db.objects.values()
+    polygon_foods = []
+    points_food = []
+    for food in foods:
+        food_p = [(food['left'], food['top']), 
+                (food['left']+food['width'], food['top']), 
+                (food['left']+food['width'], food['top']+food['height']), 
+                (food['left'], food['top']+food['height'])]
+        polygon_foods.append(food_p)
+        for point_polyg in food_p:
+            points_food.append(point_polyg)
     dx = 0
     dy = 0
     dr = 0
@@ -84,7 +96,7 @@ def insert(inter):
     pos = Position.objects.get()
     dots = Dots.objects.get()
     channel_layer = get_channel_layer()
-    while st == 1:
+    while st == 1 or st == 3:
         #time.sleep(0.030)
         cntr = Controler.objects.get()
         pos.x = round(x)
@@ -92,6 +104,20 @@ def insert(inter):
         pos.r = round(r)
         pos.save()
         st = cntr.value
+        if st == 3:
+            cntr.value = 1
+            cntr.save()
+            foods = Food_db.objects.values()
+            polygon_foods = []
+            points_food = []
+            for food in foods:
+                food_p = [(food['left'], food['top']), 
+                        (food['left']+food['width'], food['top']), 
+                        (food['left']+food['width'], food['top']+food['height']), 
+                        (food['left'], food['top']+food['height'])]
+                polygon_foods.append(food_p)
+                for point_polyg in food_p:
+                    points_food.append(point_polyg)
         # st = data[0][1]
         if rand == 0:
             # dr = random.randint(-20, 20)
@@ -127,7 +153,26 @@ def insert(inter):
         for j in range(0, len(stxy)):
             for jj in range(0, len(axy1)):
                 acrs = acrs + across(stxy[j][0], -stxy[j][1], stxy[j][2], -stxy[j][3], axy1[jj][0], -axy1[jj][1], axy2[jj][0], -axy2[jj][1])
-        if acrs >= 1:
+        
+        points= [(axy2[0][0], axy2[0][1]), (axy2[1][0], axy2[1][1]), (axy2[2][0], axy2[2][1]), (axy2[3][0], axy2[3][1])]
+        
+        num_edges_children  =  4
+        num_nodes_children  =  4
+        is_inside_sum = False
+        tree = polygons.build_search_tree(polygon_foods, num_edges_children, num_nodes_children)
+        if len(tree) > 0 and len(points) > 0:
+            is_insides = polygons.points_are_inside(tree, points)
+            polygon_bacterium = [[(axy2[0][0], axy2[0][1]), (axy2[1][0], axy2[1][1]), (axy2[2][0], axy2[2][1]), (axy2[3][0], axy2[3][1])]]
+            tree = polygons.build_search_tree(polygon_bacterium, num_edges_children, num_nodes_children)
+            is_insides_bac = polygons.points_are_inside(tree, points_food)
+            is_insides = is_insides + is_insides_bac
+            is_inside_sum = False
+            for is_inside in is_insides:
+                is_inside_sum = is_inside_sum or is_inside
+                if is_inside_sum: 
+                    break
+        
+        if acrs >= 1 or is_inside_sum:
             dx = 0
             dy = 0
             dr = 0
@@ -406,6 +451,16 @@ def add_food(request):
     if food_obj.is_new:
         res['is_new'] = True
     res_json = json.dumps(res)
+    obj_state, created = Controler.objects.get_or_create(
+        name = "state",
+        description = "with controller state you can start or stop bacterial",
+    )
+    if obj_state.value == 0:
+        obj_state.value = 2
+        obj_state.save()
+    if obj_state.value == 1:
+        obj_state.value = 3
+        obj_state.save()
     return HttpResponse(res_json)
 
 def del_food(request):
@@ -419,4 +474,14 @@ def del_food(request):
     else:
         data_obj['isNull'] = True
     data = json.dumps(data_obj)
+    obj_state, created = Controler.objects.get_or_create(
+        name = "state",
+        description = "with controller state you can start or stop bacterial",
+    )
+    if obj_state.value == 0:
+        obj_state.value = 2
+        obj_state.save()
+    if obj_state.value == 1:
+        obj_state.value = 3
+        obj_state.save()
     return HttpResponse(data)
