@@ -12,6 +12,8 @@ import json
 import time
 import random
 import math
+import numpy as np
+from numpy import linalg as LA
 from typing import Any, Sequence
 from psycopg import Cursor
 
@@ -25,6 +27,8 @@ from django.core import serializers
 from threading import Thread
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from cub.my_classes import Food, Food_db
+import polygons
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -47,7 +51,7 @@ def start(request):
         name = "state",
         description = "with controller state you can start or stop bacterial",
     )
-    if obj_state.value != 1:
+    if obj_state.value == 0:
         obj_state.value = 1
         obj_state.save()
     data = serializers.serialize('json', [ obj_state, ])
@@ -72,7 +76,18 @@ def insert(inter):
     x = 400
     y = 400
     r = 0
-    stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
+    stxy = Edge.objects.filter(pref_parent_id="").values_list("x1", "y1", "x2", "y2")
+    foods = Food_db.objects.values()
+    polygon_foods = []
+    points_food = []
+    for food in foods:
+        food_p = [(food['left'], food['top']), 
+                (food['left']+food['width'], food['top']), 
+                (food['left']+food['width'], food['top']+food['height']), 
+                (food['left'], food['top']+food['height'])]
+        polygon_foods.append(food_p)
+        for point_polyg in food_p:
+            points_food.append(point_polyg)
     dx = 0
     dy = 0
     dr = 0
@@ -81,7 +96,7 @@ def insert(inter):
     pos = Position.objects.get()
     dots = Dots.objects.get()
     channel_layer = get_channel_layer()
-    while st == 1:
+    while st == 1 or st == 3:
         #time.sleep(0.030)
         cntr = Controler.objects.get()
         pos.x = round(x)
@@ -89,8 +104,23 @@ def insert(inter):
         pos.r = round(r)
         pos.save()
         st = cntr.value
+        if st == 3:
+            cntr.value = 1
+            cntr.save()
+            foods = Food_db.objects.values()
+            polygon_foods = []
+            points_food = []
+            for food in foods:
+                food_p = [(food['left'], food['top']), 
+                        (food['left']+food['width'], food['top']), 
+                        (food['left']+food['width'], food['top']+food['height']), 
+                        (food['left'], food['top']+food['height'])]
+                polygon_foods.append(food_p)
+                for point_polyg in food_p:
+                    points_food.append(point_polyg)
         # st = data[0][1]
         if rand == 0:
+            # dr = random.randint(-20, 20)
             dr = random.randint(-20, 20)
             dx = 0
             dy = 0
@@ -122,9 +152,27 @@ def insert(inter):
                        dr1[l][0] * math.sin(math.radians(r2)) + dr1[l][1] * math.cos(math.radians(r2)) + 15 + y2]
         for j in range(0, len(stxy)):
             for jj in range(0, len(axy1)):
-                acrs = acrs + across(stxy[j][0], -stxy[j][1], stxy[j][2], -stxy[j][3], axy1[jj][0], -axy1[jj][1],
-                                     axy2[jj][0], -axy2[jj][1])
-        if acrs >= 1:
+                acrs = acrs + across(stxy[j][0], -stxy[j][1], stxy[j][2], -stxy[j][3], axy1[jj][0], -axy1[jj][1], axy2[jj][0], -axy2[jj][1])
+        
+        points= [(axy2[0][0], axy2[0][1]), (axy2[1][0], axy2[1][1]), (axy2[2][0], axy2[2][1]), (axy2[3][0], axy2[3][1])]
+        
+        num_edges_children  =  4
+        num_nodes_children  =  4
+        is_inside_sum = False
+        tree = polygons.build_search_tree(polygon_foods, num_edges_children, num_nodes_children)
+        if len(tree) > 0 and len(points) > 0:
+            is_insides = polygons.points_are_inside(tree, points)
+            polygon_bacterium = [[(axy2[0][0], axy2[0][1]), (axy2[1][0], axy2[1][1]), (axy2[2][0], axy2[2][1]), (axy2[3][0], axy2[3][1])]]
+            tree = polygons.build_search_tree(polygon_bacterium, num_edges_children, num_nodes_children)
+            is_insides_bac = polygons.points_are_inside(tree, points_food)
+            is_insides = is_insides + is_insides_bac
+            is_inside_sum = False
+            for is_inside in is_insides:
+                is_inside_sum = is_inside_sum or is_inside
+                if is_inside_sum: 
+                    break
+        
+        if acrs >= 1 or is_inside_sum:
             dx = 0
             dy = 0
             dr = 0
@@ -279,6 +327,8 @@ def across(x1, y1, x2, y2, x3, y3, x4, y4):
     return s
 
 def eyes_s(x,y,r):
+    # stxy = Edge.objects.filter(pref_parent_id="").values_list("x1", "y1", "x2", "y2")
+    xxx = False
     stxy = Edge.objects.values_list("x1", "y1", "x2", "y2")
     n = 59
     s3 = 100
@@ -297,9 +347,34 @@ def eyes_s(x,y,r):
     for i in range(0, n+1):
         rrr = []
         for j in range(0,len(stxy)):
-            xy = distance_e(ds1[i][0],ds1[i][1],ds2[i][0],ds2[i][1],stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3])
-            if xy[0] - ds1[i][0] > 0 and ds2[i][0] - ds1[i][0] > 0 or xy[0] - ds1[i][0] < 0 and ds2[i][0] - ds1[i][0] < 0 or xy[1] - ds1[i][1] > 0 and ds2[i][1] - ds1[i][1] > 0 or xy[1] - ds1[i][1] < 0 and ds2[i][1] - ds1[i][1] < 0:
-                rrr.append(math.sqrt((xy[0] - ds1[i][0]) * (xy[0] - ds1[i][0]) + (xy[1] - ds1[i][1]) * (xy[1] - ds1[i][1])))
+            x1EyeLine = ds1[i][0]
+            y1EyeLine = ds1[i][1]
+            x2EyeLine = ds2[i][0]
+            y2EyeLine = ds2[i][1]
+            xy = distance_e(x1EyeLine,y1EyeLine,x2EyeLine,y2EyeLine,stxy[j][0],stxy[j][1],stxy[j][2],stxy[j][3]) # x,y точки пересечения линии датчика зрения и линии стены
+            # xCrossWall = round(xy[0], 15)
+            # yCrossWall = round(xy[1], 15)
+            xCrossWall = xy[0]
+            yCrossWall = xy[1]
+            x1Wall = min(stxy[j][0],stxy[j][2])
+            x2Wall = max(stxy[j][0],stxy[j][2])
+            y1Wall = min(stxy[j][1],stxy[j][3])
+            y2Wall = max(stxy[j][1],stxy[j][3])
+            s = xy[2]
+            dd = 0.0000001
+            # if (xCrossWall - x1EyeLine > 0 and x2EyeLine - x1EyeLine > 0 or \
+            #    xCrossWall - x1EyeLine < 0 and x2EyeLine - x1EyeLine < 0 or \
+            #    yCrossWall - y1EyeLine > 0 and y2EyeLine - y1EyeLine > 0 or \
+            #    yCrossWall - y1EyeLine < 0 and y2EyeLine - y1EyeLine < 0) and \
+            #    x1Wall <= xCrossWall and xCrossWall <= x2Wall and \
+            #    y1Wall <= yCrossWall and yCrossWall <= y2Wall:
+            #     rrr.append(math.sqrt((xCrossWall - x1EyeLine) ** 2 + (yCrossWall - y1EyeLine) ** 2))
+            # if xxx:
+            #     www = 'i: ' +  str(i) + ', j: ' + str(j) + ', xy: ' +  str(xy)
+            #     print(www)
+            if x1Wall <= xCrossWall + dd and xCrossWall - dd <= x2Wall and \
+               y1Wall <= yCrossWall + dd and yCrossWall - dd <= y2Wall and s > 0:
+                rrr.append(s)
 
         if len(rrr) > 0:
             sss.append(min(rrr))
@@ -309,20 +384,28 @@ def eyes_s(x,y,r):
         pref = 's'
         if i < 10:
             pref = 's0'
+        
+        if sss[i]==0:
+            # print(www)
+            sss[i]=0
+            xxx = True
+        else:
+            xxx = False
             
+        
         data_dict[pref + str(i)] = sss[i]
         scsc.append(sss[i])
         scsc.append(0)
     Vision.objects.create(**data_dict)
     return scsc
-
+# поворот точки x, y вокруг x0, y0 по радиусу r
 def rotors(x0, y0, x, y, r):
     dx = x - x0
     dy = y - y0
     xy = [dx * math.cos(math.radians(r)) - dy * math.sin(math.radians(r)) + x0,
           dx * math.sin(math.radians(r)) + dy * math.cos(math.radians(r)) + y0]
     return xy
-
+# x1, y1, x2, y2 - это линия датчика зрения, x3, y3, x4, y4 - линия стены
 def distance_e(x1, y1, x2, y2, x3, y3, x4, y4):
     x1 = float(x1) + 0.00000000000000001
     y1 = float(y1) + 0.00000000000000001
@@ -332,12 +415,73 @@ def distance_e(x1, y1, x2, y2, x3, y3, x4, y4):
     y3 = float(y3) + 0.00000000000000001
     x4 = float(x4) + 0.00000000000000002
     y4 = float(y4) + 0.00000000000000002
-    k1 = (y2 - y1) / (x2 - x1 + 0.00000000000000001)
-    k2 = (y4 - y3) / (x4 - x3 + 0.00000000000000001)
-    y01 = y1 - k1 * x1
-    y02 = y3 - k2 * x3
-    x = (y01 - y02) / (k2 - k1 + 0.00000000000000001)
-    y = k1 * x + y01
-    r = math.degrees(math.atan(k1))
-    xy = [x,y]
-    return xy
+    k1 = (y2 - y1) / (x2 - x1 + 0.00000000000000001) # наклон линии датчика зрения
+    k2 = (y4 - y3) / (x4 - x3 + 0.00000000000000001) # наклон линии стены
+    y01 = y1 - k1 * x1 # постоянное смещение линии датчика зрения по оси y
+    y02 = y3 - k2 * x3 # постоянное смещение линии стены по оси y
+    x = (y01 - y02) / (k2 - k1 + 0.00000000000000001) # x точки пересечения линии датчика зрения и линии стены
+    y = k1 * x + y01                                  # y точки пересечения линии датчика зрения и линии стены
+
+    A = [x1, y1]
+    B = [x2, y2]
+    C = [x3, y3]
+    D = [x4, y4]
+    O = [x, y]
+    AB = [A[0]-B[0], A[1]-B[1]] # A - B
+    AO = [A[0]-O[0], A[1]-O[1]] # A - O
+    nAB = math.sqrt(AB[0]**2 + AB[1]**2) # LA.norm(AB)
+    dotAB_AO = AB[0]*AO[0] + AB[1]*AO[1] # np.dot(AB, AO)
+    s = dotAB_AO/nAB
+    xys = [x, y, s]
+    return xys # расстояние от A до пересечения
+
+def get_div_foods(request):
+    result = Food_db.objects.values('top', 'left', 'div_id', 'height', 'width')
+    data_all = []
+    for value in result:
+        data_all.append(value)
+    data = json.dumps(data_all)
+    return HttpResponse(data)
+
+def add_food(request):
+    data_json = request.POST['food']
+    data = json.loads(data_json)
+    res = {'is_new': False}
+    food_obj = Food(data['y'], data['x'], data['div_id'], data['h'], data['w'])
+    if food_obj.is_new:
+        res['is_new'] = True
+    res_json = json.dumps(res)
+    obj_state, created = Controler.objects.get_or_create(
+        name = "state",
+        description = "with controller state you can start or stop bacterial",
+    )
+    if obj_state.value == 0:
+        obj_state.value = 2
+        obj_state.save()
+    if obj_state.value == 1:
+        obj_state.value = 3
+        obj_state.save()
+    return HttpResponse(res_json)
+
+def del_food(request):
+    f_db = Food_db.objects.last()
+    data_obj = {}
+    if f_db is not None:
+        f = Food(f_db.top, f_db.left, f_db.div_id, f_db.height, f_db.width)
+        data_obj = f.get_div()
+        data_obj['isNull'] = False
+        f.delete()
+    else:
+        data_obj['isNull'] = True
+    data = json.dumps(data_obj)
+    obj_state, created = Controler.objects.get_or_create(
+        name = "state",
+        description = "with controller state you can start or stop bacterial",
+    )
+    if obj_state.value == 0:
+        obj_state.value = 2
+        obj_state.save()
+    if obj_state.value == 1:
+        obj_state.value = 3
+        obj_state.save()
+    return HttpResponse(data)

@@ -1,41 +1,58 @@
 
 import psycopg as pg
 import json
-from typing import Any, Sequence
-from psycopg import Cursor
-from cub.models import Vision
+import numpy as np
+from numpy import linalg as LA
+import math
+import numpy as np
+import polygons
 
-ratings_dictionary = {'s00': 10, 'c00': 20, 's01': 30}
-new_obj = Vision()
-new_obj.save(**ratings_dictionary)
-# conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-# cur = conn.cursor()
-# cur.execute("select s1,c1,s2,c2,s3,c3,s4,c4,s5,c5,s6,c6,s7,c7,s8,c8,s9,c9,s10,c10,s11,c11,s12,c12,s13,c13,s14,c14,s15,c15,s16,c16,s17,c17,s18,c18,s19,c19,s20,c20,s21,c21,s22,c22,s23,c23,s24,c24,s25,c25,s26,c26,s27,c27,s28,c28,s29,c29,s30,c30,s31,c31,s32,c32,s33,c33,s34,c34,s35,c35,s36,c36,s37,c37,s38,c38,s39,c39,s40,c40,s41,c41,s42,c42,s43,c43,s44,c44,s45,c45,s46,c46,s47,c47,s48,c48,s49,c49,s50,c50,s51,c51,s52,c52,s53,c53,s54,c54,s55,c55,s56,c56,s57,c57,s58,c58,s59,c59,s60,c60 from eyes where num = (SELECT MAX(num) FROM eyes)")
-# conn.commit()
-# data = cur.fetchall()
-# cur.close()
-# conn.close()
+polygon_points  =  [ 
+    [( 0.0 ,  0.0 ),  ( 1.0 , 0.0 ), ( 1.0 ,  1.0 ),  ( 0.0 , 1.0  ) ] , 
+    [( 0.0 , 2.0 ) , ( 1.0 , 2.0 ), ( 1.0 , 3.0 ), ( 0.0 , 3.0 ) ] , ]
 
-# class DictRowFactory:
-#     def __init__(self, cursor: Cursor[Any]):
-#         self.fields = [c.name for c in cursor.description]
+points= [( 0.5 ,  0.5 ),  ( 0.5 ,  - 0.5 )]
 
-#     def __call__(self, values: Sequence[Any]) -> dict[str, Any]:
-#         return dict(zip(self.fields, values))
+num_edges_children  =  5
+num_nodes_children  =  5
+tree = polygons.build_search_tree(polygon_points, num_edges_children, num_nodes_children)
+inside = polygons.points_are_inside(tree, points)
+print(inside)  # [True, False]
 
-# conn = pg.connect(dbname="postgres", user="postgres", password="postgres", host="localhost")
-# # cur = conn.cursor(pymysql.cursors.DictCursor)
-# cur = conn.cursor(row_factory=DictRowFactory)
-# cur.execute("SELECT * FROM test where num = (SELECT MAX(num) FROM test)")
-# data = cur.fetchall()
-# cur.close()
-# #conn.close()
-# cur = conn.cursor()
-# cur.execute("select s1,c1,s2,c2,s3,c3,s4,c4,s5,c5,s6,c6,s7,c7,s8,c8,s9,c9,s10,c10,s11,c11,s12,c12,s13,c13,s14,c14,s15,c15,s16,c16,s17,c17,s18,c18,s19,c19,s20,c20,s21,c21,s22,c22,s23,c23,s24,c24,s25,c25,s26,c26,s27,c27,s28,c28,s29,c29,s30,c30,s31,c31,s32,c32,s33,c33,s34,c34,s35,c35,s36,c36,s37,c37,s38,c38,s39,c39,s40,c40,s41,c41,s42,c42,s43,c43,s44,c44,s45,c45,s46,c46,s47,c47,s48,c48,s49,c49,s50,c50,s51,c51,s52,c52,s53,c53,s54,c54,s55,c55,s56,c56,s57,c57,s58,c58,s59,c59,s60,c60 from eyes where num = (SELECT MAX(num) FROM eyes)")
-# conn.commit()
-# data2 = cur.fetchall()
-# cur.close()
-# conn.close()
-# data[0]['plot'] = data2
-# print(json.dumps(data))
-# json.dumps(data)
+# x1 = 500
+# y1 = 700
+# x2 = 500 #3
+# y2 = 600 #0.5
+# x3 = 0
+# y3 = 0
+# x4 = 1020
+# y4 = 0
+
+
+# x1 = float(x1) + 0.00000000000000001
+# y1 = float(y1) + 0.00000000000000001
+# x2 = float(x2) + 0.00000000000000002
+# y2 = float(y2) + 0.00000000000000002
+# x3 = float(x3) + 0.00000000000000001
+# y3 = float(y3) + 0.00000000000000001
+# x4 = float(x4) + 0.00000000000000002
+# y4 = float(y4) + 0.00000000000000002
+# k1 = (y2 - y1) / (x2 - x1 + 0.00000000000000001) # наклон линии датчика зрения
+# k2 = (y4 - y3) / (x4 - x3 + 0.00000000000000001) # наклон линии стены
+# y01 = y1 - k1 * x1 # постоянное смещение линии датчика зрения по оси y
+# y02 = y3 - k2 * x3 # постоянное смещение линии стены по оси y
+# x = (y01 - y02) / (k2 - k1 + 0.00000000000000001) # x точки пересечения линии датчика зрения и линии стены
+# y = k1 * x + y01                                  # y точки пересечения линии датчика зрения и линии стены
+
+# A = [x1, y1]
+# B = [x2, y2]
+# C = [x3, y3]
+# D = [x4, y4]
+# O = [x, y]
+# AB = [A[0]-B[0], A[1]-B[1]] # A - B
+# AO = [A[0]-O[0], A[1]-O[1]] # A - O
+# nAB = math.sqrt(AB[0]**2 + AB[1]**2) # LA.norm(AB)
+# nAO = math.sqrt(AO[0]**2 + AO[1]**2) # LA.norm(AO)
+# dotAB_AO = AB[0]*AO[0] + AB[1]*AO[1] # np.dot(AB, AO)
+# res = dotAB_AO/nAB
+# print(res)
