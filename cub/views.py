@@ -123,9 +123,12 @@ def insert(inter):
     dx = 0
     dy = 0
     dr = 0
+    ds = 0
     st = 1
-    rotorOrStep = 0
+    isRotor = True
     randSubIter = 1
+    sDirection = 1
+    rDirection = 1
     pos = Position.objects.get()
     dots = Dots.objects.get()
     channel_layer = get_channel_layer()
@@ -139,26 +142,41 @@ def insert(inter):
         pos.save()
         st = cntr.value
         # st = data[0][1]
-        if rotorOrStep == 0:
-            # dr = random.randint(-20, 20)
-            dr = random.randint(-20, 20)
+        if isRotor:
+            if rDirection == 0:
+                dr = -2
+            else:
+                dr = 2
+            randSubIter = randSubIter - 1
+            if randSubIter < 1:
+                randSubIter = random.randint(5, 10)
+                isRotor = False
+                sDirection = random.randint(0, 3)
+                
             dx = 0
             dy = 0
-            rotorOrStep = 1
-        elif rotorOrStep == 1:
+        elif not isRotor:
             dr = 0
-            dx = 10 * math.cos(math.radians(r))
-            dy = 10 * math.sin(math.radians(r))
-            rotorOrStep = 0
-        
-        randSubIter = randSubIter - 1
-        if randSubIter < 1:
-            randdd = random.randint(1, 4)
-            randSubIter = random.randint(1, 10)
-        if randdd == 4:
-            dr = 0
-            dx = -math.cos(math.radians(r))
-            dy = -math.sin(math.radians(r))
+            if sDirection == 0:
+                ds = -1
+            else:
+                ds = 4
+            dx = ds * math.cos(math.radians(r))
+            dy = ds * math.sin(math.radians(r))
+            randSubIter = randSubIter - 1
+            if randSubIter < 1:
+                randSubIter = random.randint(10, 20)
+                isRotor = True
+                rDirection = random.randint(0, 1)
+        # randForRevers = random.randint(1, 4)
+        # randSubIter = randSubIter - 1
+        # if randSubIter < 1:
+        #     randForRevers = random.randint(1, 4)
+        #     randSubIter = random.randint(1, 10)
+        # if randForRevers == 4:
+        #     dr = 0
+        #     dx = -math.cos(math.radians(r))
+        #     dy = -math.sin(math.radians(r))
         x1 = x
         x2 = x + dx
         y1 = y
@@ -519,6 +537,80 @@ def eyes_s(x, y, r, stxy):
 
     Vision.objects.create(**data_dict)
     return scsc
+
+
+def eyes_s_n(x, y, r, stxy, n1, n2):
+    xxx = False
+    n = 59
+    s3 = 100
+    r_l = 60
+    s1 = 20
+    ggg = 0
+    s2 = s3 + s1
+    ds1 = []
+    ds2 = []
+    sss = []
+    scsc = []
+    data_dict = {}
+    for i in range(n1-1, n2):
+        ds1.append(rotors(x + 10, y + 15, x + 25, y + 5 + s1 * i / n, r))
+        ds2.append(rotors(x + 10, y + 15, x + 25 + s3, y + 5 - s3 / 2 + s2 * i / n, r))
+
+    for i in range(n1-1, n2):
+
+        rrr = []
+        for j in range(0, len(stxy)):
+
+            x1EyeLine = ds1[i][0]
+            y1EyeLine = ds1[i][1]
+            x2EyeLine = ds2[i][0]
+            y2EyeLine = ds2[i][1]
+
+            xy = distance_e(
+                x1EyeLine,
+                y1EyeLine,
+                x2EyeLine,
+                y2EyeLine,
+                stxy[j][0],
+                stxy[j][1],
+                stxy[j][2],
+                stxy[j][3],
+            )  # x,y точки пересечения линии датчика зрения и линии стены
+
+            xCrossWall = xy[0]
+            yCrossWall = xy[1]
+
+            x1Wall = min(stxy[j][0], stxy[j][2])
+            x2Wall = max(stxy[j][0], stxy[j][2])
+            y1Wall = min(stxy[j][1], stxy[j][3])
+            y2Wall = max(stxy[j][1], stxy[j][3])
+
+            s = xy[2]
+            dd = 0.0000001
+            if (
+                x1Wall <= xCrossWall + dd
+                and xCrossWall - dd <= x2Wall
+                and y1Wall <= yCrossWall + dd
+                and yCrossWall - dd <= y2Wall
+                and s > 0
+            ):
+                rrr.append(s)
+
+        if len(rrr) > 0:
+            sss.append(min(rrr))
+        else:
+            sss.append(0)
+
+        pref = "s"
+        if i < 10:
+            pref = "s0"
+
+        if sss[i] == 0:
+            sss[i] = 0
+            xxx = True
+        else:
+            xxx = False
+    return sss
 
 
 # поворот точки x, y вокруг x0, y0 по радиусу r
