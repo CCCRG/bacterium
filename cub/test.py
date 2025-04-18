@@ -7,30 +7,47 @@ import math
 import numpy as np
 import polygons
 
-polygon_points  =  [ 
-    [( 0.0 ,  0.0 ),  ( 1.0 , 0.0 ), ( 1.0 ,  1.0 ),  ( 0.0 , 1.0  ) ] , 
-    [( 0.0 , 2.0 ) , ( 1.0 , 2.0 ), ( 1.0 , 3.0 ), ( 0.0 , 3.0 ) ] , ]
 
-points= [( 0.5 ,  0.5 ),  ( 0.5 ,  - 0.5 )]
+import concurrent.futures
+ 
+def square(x):
+    return x * x
+ 
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    results = list(executor.map(square, numbers))
+ 
+print(results)
 
-num_edges_children  =  5
-num_nodes_children  =  5
-tree = polygons.build_search_tree(polygon_points, num_edges_children, num_nodes_children)
-inside = polygons.points_are_inside(tree, points)
-print(inside)  # [True, False]
+# polygon_points  =  [ 
+#     [( 0.0 ,  0.0 ),  ( 1.0 , 0.0 ), ( 1.0 ,  1.0 ),  ( 0.0 , 1.0  ) ] , 
+#     [( 0.0 , 2.0 ) , ( 1.0 , 2.0 ), ( 1.0 , 3.0 ), ( 0.0 , 3.0 ) ] , ]
 
-indices, distances = polygons.distances_nearest_vertices(
-    tree, [(0.6, 0.6)]
-)
-print(indices)  # [2, 0]
-print(distances)  # [0.5656854249492381, 0.7071067811865476]
+# points= [( 0.5 ,  0.5 ),  ( 0.5 ,  - 0.5 )]
 
-indices, distances = polygons.distances_nearest_vertices(
-    tree, [(0.6, 0.6), (0.5, -0.5)]
-)
+# num_edges_children  =  5
+# num_nodes_children  =  5
+# tree = polygons.build_search_tree(polygon_points, num_edges_children, num_nodes_children)
+# inside = polygons.points_are_inside(tree, points)
+# print(inside)  # [True, False]
 
-print(indices)  # [2, 0]
-print(distances)  # [0.5656854249492381, 0.7071067811865476]
+# indices, distances = polygons.distances_nearest_vertices(
+#     tree, [(0.6, 0.6)]
+# )
+# print(indices)  # [2, 0]
+# print(distances)  # [0.5656854249492381, 0.7071067811865476]
+
+# indices, distances = polygons.distances_nearest_vertices(
+#     tree, [(0.6, 0.6), (0.5, -0.5)]
+# )
+
+# print(indices)  # [2, 0]
+# print(distances)  # [0.5656854249492381, 0.7071067811865476]
+
+
+
+
+
 # x1 = 500
 # y1 = 700
 # x2 = 500 #3

@@ -30,7 +30,14 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from cub.my_classes import Food, Food_db
 import polygons
+from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
+all_s_res1 = [1]
+all_s_res2 = [2]
+all_s_res3 = [3]
+all_s_res4 = [4]
 
 class DictRowFactory:
     def __init__(self, cursor: Cursor[Any]):
@@ -315,7 +322,7 @@ def insert(inter):
         r = r + dr
         # list_plot = []
         time1 = time.time_ns()
-        list_plot = eyes_s(x, y, r, stxy_all)
+        list_plot = eyes_s_res(x, y, r, stxy_all)
         time2 = time.time_ns()
         print((time2 - time1) / 1000000)
         all_json = {}
@@ -538,8 +545,149 @@ def eyes_s(x, y, r, stxy):
     Vision.objects.create(**data_dict)
     return scsc
 
+def get_sssi(i, stxy, ds1, ds2):
+    rrr = []
+    for j in range(0, len(stxy)):
 
-def eyes_s_n(x, y, r, stxy, n1, n2):
+        x1EyeLine = ds1[i][0]
+        y1EyeLine = ds1[i][1]
+        x2EyeLine = ds2[i][0]
+        y2EyeLine = ds2[i][1]
+
+        xy = distance_e(
+            x1EyeLine,
+            y1EyeLine,
+            x2EyeLine,
+            y2EyeLine,
+            stxy[j][0],
+            stxy[j][1],
+            stxy[j][2],
+            stxy[j][3],
+        )  # x,y точки пересечения линии датчика зрения и линии стены
+
+        xCrossWall = xy[0]
+        yCrossWall = xy[1]
+
+        x1Wall = min(stxy[j][0], stxy[j][2])
+        x2Wall = max(stxy[j][0], stxy[j][2])
+        y1Wall = min(stxy[j][1], stxy[j][3])
+        y2Wall = max(stxy[j][1], stxy[j][3])
+
+        s = xy[2]
+        dd = 0.0000001
+        if (
+            x1Wall <= xCrossWall + dd
+            and xCrossWall - dd <= x2Wall
+            and y1Wall <= yCrossWall + dd
+            and yCrossWall - dd <= y2Wall
+            and s > 0
+        ):
+            rrr.append(s)
+
+    if len(rrr) > 0:
+        res_s = min(rrr)
+    else:
+        res_s = 0
+    return res_s
+
+# def eyes_s_multy(x, y, r, stxy):
+#     xxx = False
+#     n = 59
+#     s3 = 100
+#     r_l = 60
+#     s1 = 20
+#     ggg = 0
+#     s2 = s3 + s1
+#     ds1 = []
+#     ds2 = []
+#     sss = []
+#     scsc = []
+#     data_dict = {}
+#     for i in range(0, n + 1):
+#         ds1.append(rotors(x + 10, y + 15, x + 25, y + 5 + s1 * i / n, r))
+#         ds2.append(rotors(x + 10, y + 15, x + 25 + s3, y + 5 - s3 / 2 + s2 * i / n, r))
+
+#     for i in range(0, n + 1):
+
+#         # with ProcessPoolExecutor() as executor:
+#         #     worker = partial(get_sssi, lst=pop[0].data, int_value=fitness)
+#         #     executor.map(worker, range(0, len(pop[0].data)))
+#         # with Pool(5) as p:
+#         #         print(p.map(f, [1, 2, 3]))
+#         # res_s = get_sssi(stxy, ds1[i], ds2[i])
+
+#     sss.append(res_s)
+#     pref = "s"
+#     if i < 10:
+#         pref = "s0"
+
+#     data_dict[pref + str(i)] = sss[i]
+#     scsc.append(sss[i])
+#     scsc.append(0)
+
+#     Vision.objects.create(**data_dict)
+#     return scsc
+
+def eyes_s_res(x, y, r, stxy):
+    xxx = False
+    n = 59
+    s3 = 100
+    r_l = 60
+    s1 = 20
+    ggg = 0
+    s2 = s3 + s1
+    ds1 = []
+    ds2 = []
+    sss = []
+
+    # t1 = Thread(target=eyes_s_n, args=(x, y, r, stxy, 1, 15,))
+    # t1.daemon = True
+    # t2 = Thread(target=eyes_s_n, args=(x, y, r, stxy, 16, 30,))
+    # t2.daemon = True
+    # t3 = Thread(target=eyes_s_n, args=(x, y, r, stxy, 31, 45,))
+    # t3.daemon = True
+    # t4 = Thread(target=eyes_s_n, args=(x, y, r, stxy, 46, 60,))
+    # t4.daemon = True
+    # sss1 = t1.start()
+    # sss2 = t2.start()
+    # sss3 = t3.start()
+    # sss4 = t4.start()
+    l = [0, 1, 2, 3]
+    with ProcessPoolExecutor() as executor:
+        worker = partial(eyes_s_n, lst=l, seg=15, x=x, y=y, r=r, stxy=stxy)
+        results = list(executor.map(worker, range(0, len(l))))
+    # sss1 = eyes_s_n(0, l, 15, x, y, r, stxy)
+    # sss2 = eyes_s_n(1, l, 15, x, y, r, stxy)
+    # sss3 = eyes_s_n(2, l, 15, x, y, r, stxy)
+    # sss4 = eyes_s_n(3, l, 15, x, y, r, stxy)
+    # global all_s_res1
+    # global all_s_res2
+    # global all_s_res3
+    # global all_s_res4
+    for ires in results:
+        sss = sss + ires
+    # sss = sss1 + sss2 + sss3 + sss4
+    scsc = []
+    data_dict = {}
+
+    for i in range(0, n + 1):
+
+        pref = "s"
+        if i < 10:
+            pref = "s0"
+
+        data_dict[pref + str(i)] = sss[i]
+        scsc.append(sss[i])
+        scsc.append(0)
+
+    Vision.objects.create(**data_dict)
+    
+    return scsc
+
+def eyes_s_n(idx, lst, seg, x, y, r, stxy):
+    k = lst[idx]
+    n1 = 1 + k * seg
+    n2 = (k + 1) * seg
     xxx = False
     n = 59
     s3 = 100
@@ -556,7 +704,7 @@ def eyes_s_n(x, y, r, stxy, n1, n2):
         ds1.append(rotors(x + 10, y + 15, x + 25, y + 5 + s1 * i / n, r))
         ds2.append(rotors(x + 10, y + 15, x + 25 + s3, y + 5 - s3 / 2 + s2 * i / n, r))
 
-    for i in range(n1-1, n2):
+    for i in range(0, n2-n1+1):
 
         rrr = []
         for j in range(0, len(stxy)):
@@ -600,16 +748,20 @@ def eyes_s_n(x, y, r, stxy, n1, n2):
             sss.append(min(rrr))
         else:
             sss.append(0)
-
-        pref = "s"
-        if i < 10:
-            pref = "s0"
-
-        if sss[i] == 0:
-            sss[i] = 0
-            xxx = True
-        else:
-            xxx = False
+        
+    # if idx == 0:
+    #     global all_s_res1
+    #     all_s_res1 = sss
+    # elif idx == 1:
+    #     global all_s_res2
+    #     all_s_res2 = sss
+    # elif idx == 2:
+    #     global all_s_res3
+    #     all_s_res3 = sss
+    # elif idx == 3:
+    #     global all_s_res4
+    #     all_s_res4 = sss
+    # p = sss
     return sss
 
 
