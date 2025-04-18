@@ -19,6 +19,18 @@ tree = polygons.build_search_tree(polygon_points, num_edges_children, num_nodes_
 inside = polygons.points_are_inside(tree, points)
 print(inside)  # [True, False]
 
+indices, distances = polygons.distances_nearest_vertices(
+    tree, [(0.6, 0.6)]
+)
+print(indices)  # [2, 0]
+print(distances)  # [0.5656854249492381, 0.7071067811865476]
+
+indices, distances = polygons.distances_nearest_vertices(
+    tree, [(0.6, 0.6), (0.5, -0.5)]
+)
+
+print(indices)  # [2, 0]
+print(distances)  # [0.5656854249492381, 0.7071067811865476]
 # x1 = 500
 # y1 = 700
 # x2 = 500 #3
