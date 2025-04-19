@@ -123,9 +123,12 @@ def insert(inter):
     dx = 0
     dy = 0
     dr = 0
+    ds = 0
     st = 1
-    rotorOrStep = 0
+    isRotor = True
     randSubIter = 1
+    sDirection = 1
+    rDirection = 1
     pos = Position.objects.get()
     dots = Dots.objects.get()
     channel_layer = get_channel_layer()
@@ -139,26 +142,32 @@ def insert(inter):
         pos.save()
         st = cntr.value
         # st = data[0][1]
-        if rotorOrStep == 0:
-            # dr = random.randint(-20, 20)
-            dr = random.randint(-20, 20)
+        if isRotor:
+            if rDirection == 0:
+                dr = -2
+            else:
+                dr = 2
+            randSubIter = randSubIter - 1
+            if randSubIter < 1:
+                randSubIter = random.randint(5, 10)
+                isRotor = False
+                sDirection = random.randint(0, 3)
+                
             dx = 0
             dy = 0
-            rotorOrStep = 1
-        elif rotorOrStep == 1:
+        elif not isRotor:
             dr = 0
-            dx = 10 * math.cos(math.radians(r))
-            dy = 10 * math.sin(math.radians(r))
-            rotorOrStep = 0
-        
-        randSubIter = randSubIter - 1
-        if randSubIter < 1:
-            randdd = random.randint(1, 4)
-            randSubIter = random.randint(1, 10)
-        if randdd == 4:
-            dr = 0
-            dx = -math.cos(math.radians(r))
-            dy = -math.sin(math.radians(r))
+            if sDirection == 0:
+                ds = -1
+            else:
+                ds = 4
+            dx = ds * math.cos(math.radians(r))
+            dy = ds * math.sin(math.radians(r))
+            randSubIter = randSubIter - 1
+            if randSubIter < 1:
+                randSubIter = random.randint(10, 20)
+                isRotor = True
+                rDirection = random.randint(0, 1)
         x1 = x
         x2 = x + dx
         y1 = y
