@@ -35,6 +35,8 @@ from threading import Thread
 from queue import Queue
 import time
 from enum import Enum, IntEnum
+from shapely.geometry import Point, MultiPoint
+from shapely.ops import nearest_points
 
 class ActionsCodes(IntEnum):
     """Справочник действий-кодов"""
@@ -43,6 +45,7 @@ class ActionsCodes(IntEnum):
     TURNR = 2
     FORVARD = 3
     REVERS = 4
+    EAT = 5
 
 # ОБЩАЯ очередь для всего приложения
 # bacterial_queue = Queue()
@@ -53,16 +56,21 @@ class BacterialProcess:
         self.x = 400
         self.y = 400
         self.r = 0
+        self.eat = 0
+        self.mouth = {'x':15, 'y':0}
         self.stxy = Edge.objects.filter(pref_parent_id="").values_list("x1", "y1", "x2", "y2")
         self.foods = Food_db.objects.values()
         self.polygon_foods = []
         self.points_food = []
+        self.center_foods = []
         for food in self.foods:
             food_p = [(food['left'], food['top']), 
                     (food['left']+food['width'], food['top']), 
                     (food['left']+food['width'], food['top']+food['height']), 
                     (food['left'], food['top']+food['height'])]
+            food_c = (food['left']+food['width']/2, food['top']+food['height']/2)
             self.polygon_foods.append(food_p)
+            self.center_foods.append(food_c)
             for point_polyg in food_p:
                 self.points_food.append(point_polyg)
         self.dx = 0
@@ -113,12 +121,15 @@ class BacterialProcess:
             self.foods = Food_db.objects.values()
             self.polygon_foods = []
             self.points_food = []
+            self.center_foods = []
             for food in self.foods:
                 food_p = [(food['left'], food['top']), 
                         (food['left']+food['width'], food['top']), 
                         (food['left']+food['width'], food['top']+food['height']), 
                         (food['left'], food['top']+food['height'])]
+                food_c = (food['left']+food['width']/2, food['top']+food['height']/2)
                 self.polygon_foods.append(food_p)
+                self.center_foods.append(food_c)
                 for point_polyg in food_p:
                     self.points_food.append(point_polyg)
         # st = data[0][1]
@@ -133,6 +144,9 @@ class BacterialProcess:
         dr1 = [[-15, -10], [15, -10], [15, 10], [-15, 10]]
         axy1 = [[-15, -10], [15, -10], [15, 10], [-15, 10]]
         axy2 = [[-15, -10], [15, -10], [15, 10], [-15, 10]]
+        mouth = {'x':15, 'y':0}
+        self.mouth['x'] = mouth['x'] * math.cos(math.radians(r1)) - mouth['y'] * math.sin(math.radians(r1)) + 10 + x1
+        self.mouth['y'] = mouth['x'] * math.sin(math.radians(r1)) + mouth['y'] * math.cos(math.radians(r1)) + 15 + y1
         for l in range(0, 4):
             axy1[l] = [dr1[l][0] * math.cos(math.radians(r1)) - dr1[l][1] * math.sin(math.radians(r1)) + 10 + x1,
                        dr1[l][0] * math.sin(math.radians(r1)) + dr1[l][1] * math.cos(math.radians(r1)) + 15 + y1]
@@ -195,44 +209,73 @@ class BacterialProcess:
         all_json['dots_r'] = self.r
 
         #data = serializers.serialize('json', [ obj_position, ])
+        #поиск ближайшей еды
+        if self.foods.count() > 0:
+            nearest_food = self._find_nearest_food((self.mouth['x'],self.mouth['y']))
+            div_id = 'food_' + str(int(nearest_food[1]-2.5)) + '_' + str(int(nearest_food[0]-2.5))
+            if nearest_food[2] < 12:
+                if self.eat == 1:
+                    self._del_food(div_id)
+                    all_json['del_food'] = div_id
+                    
         ddd = json.dumps(all_json)
         return ddd
     
     def action_signal(self, act: ActionsCodes):
         ## под замену
         if act == ActionsCodes.RANDOM:
-            if self.rand == 0:
-                # dr = random.randint(-20, 20)
-                self.dr = random.randint(-20, 20)
+            ## если 0 то кушает, иначе все остальное
+            randdd = random.randint(0, 1)
+            if randdd == 0:
+                self.dr = 0
                 self.dx = 0
                 self.dy = 0
-                self.rand = 1
-            elif self.rand == 1:
-                self.dr = 0
-                self.dx = 10 * math.cos(math.radians(self.r))
-                self.dy = 10 * math.sin(math.radians(self.r))
-                self.rand = 0
-            randdd = random.randint(1, 4)
-            if randdd == 4:
-                self.dr = 0
-                self.dx = -math.cos(math.radians(self.r))
-                self.dy = -math.sin(math.radians(self.r))
+                self.eat = 1
+            else:
+                if self.rand == 0:
+                    # dr = random.randint(-20, 20)
+                    self.dr = random.randint(-20, 20)
+                    self.dx = 0
+                    self.dy = 0
+                    self.eat = 0
+                    self.rand = 1
+                elif self.rand == 1:
+                    self.dr = 0
+                    self.dx = 10 * math.cos(math.radians(self.r))
+                    self.dy = 10 * math.sin(math.radians(self.r))
+                    self.eat = 0
+                    self.rand = 0
+                randdd = random.randint(1, 4)
+                if randdd == 4:
+                    self.dr = 0
+                    self.dx = -math.cos(math.radians(self.r))
+                    self.dy = -math.sin(math.radians(self.r))
+                    self.eat = 0
         elif act == ActionsCodes.TURNL:
                 self.dr = -20
                 self.dx = 0
                 self.dy = 0
+                self.eat = 0
         elif act == ActionsCodes.TURNR:
                 self.dr = 20
                 self.dx = 0
                 self.dy = 0
+                self.eat = 0
         elif act == ActionsCodes.FORVARD:
                 self.dr = 0
                 self.dx = 10 * math.cos(math.radians(self.r))
                 self.dy = 10 * math.sin(math.radians(self.r))
+                self.eat = 1
         elif act == ActionsCodes.REVERS:
                 self.dr = 0
-                self.dx = -math.cos(math.radians(self.r))
-                self.dy = -math.sin(math.radians(self.r))
+                self.dx = -0*math.cos(math.radians(self.r))
+                self.dy = -0*math.sin(math.radians(self.r))
+                self.eat = 0
+        elif act == ActionsCodes.EAT:
+                self.dr = 0
+                self.dx = 0
+                self.dy = 0
+                self.eat = 1
 
     def _across(self, x1, y1, x2, y2, x3, y3, x4, y4):
         ar1 = self._distance(x1, y1, x2, y2, x3, y3)
@@ -391,3 +434,32 @@ class BacterialProcess:
         s = dotAB_AO/nAB
         xys = [x, y, s]
         return xys # расстояние от A до пересечения
+    
+    def _find_nearest_food(self, current_point):
+        current = Point(current_point)
+        foods = MultiPoint(self.center_foods)
+        nearest = nearest_points(current, foods)[1]
+        dist = current.distance(nearest)
+        return (nearest.x, nearest.y, dist)
+    
+    def _del_food(self, div_id_for_del):
+        f_db = Food_db.objects.get(div_id=div_id_for_del)
+        data_obj = {}
+        if f_db is not None:
+            f = Food(f_db.top, f_db.left, f_db.div_id, f_db.height, f_db.width)
+            data_obj = f.get_div()
+            data_obj['isNull'] = False
+            f.delete()
+        else:
+            data_obj['isNull'] = True
+        data = json.dumps(data_obj)
+        obj_state, created = Controler.objects.get_or_create(
+            name = "state",
+            description = "with controller state you can start or stop bacterial",
+        )
+        if obj_state.value == 0:
+            obj_state.value = 2
+            obj_state.save()
+        if obj_state.value == 1:
+            obj_state.value = 3
+            obj_state.save()

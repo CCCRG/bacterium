@@ -9,7 +9,7 @@ from django.shortcuts import render
 from django.shortcuts import redirect
 from django.template import Context
 import json
-# import time
+import time
 # import random
 import math
 import numpy as np
@@ -77,7 +77,7 @@ def process_bac(inter):
     bacterial_process = physical_simulation.BacterialProcess(inter)
     channel_layer = get_channel_layer()
     while bacterial_process.st == 1 or bacterial_process.st == 3:
-        bacterial_process.action_signal(physical_simulation.ActionsCodes.REVERS)
+        bacterial_process.action_signal(physical_simulation.ActionsCodes.RANDOM)
         ddd = bacterial_process.process_data()
         async_to_sync(channel_layer.group_send)(
             'chat_lobby',
@@ -86,6 +86,7 @@ def process_bac(inter):
                 'message': ddd
             }
         )
+        #time.sleep(0.5)
 
 def json_1(request):
     data = json_2
