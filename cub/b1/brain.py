@@ -4,6 +4,7 @@ from typing import List, Union, Any, Dict, Optional
 #Matrix = TypeVar('Neuron', bound=Neuron)
 from collections import deque
 import matplotlib.pyplot as plt
+import random
         
 # -------------------------------
 # 2. Класс детектора
@@ -73,8 +74,8 @@ class Correlation:
     def __init__(self, x: Pin, y: DPin):
         self.x = x
         self.y = y
-        self.history = deque(maxlen=1000)
-        self.value = 0
+        self.history = deque(maxlen=100)
+        self.value = 0.5
         
     def calc_iter(self):
         x_val = self.x.detector.curr_val
@@ -86,7 +87,10 @@ class Correlation:
         count_p = sum(1 for h in self.history if h == 1)
         count_m = len(self.history) - count_p
         self.value = (count_p - count_m)/len(self.history)
-        
+        if self.x.type == 'Control':
+            bit_rand = 1 if random.random() < self.value else 0
+            self.x.detector.curr_val = bit_rand
+            
 # -------------------------------
 # 2. Класс нейрона
 # -------------------------------
@@ -126,6 +130,10 @@ class Neuron:
             p_x.search_link()
         for p_c in self.pins_c:
             p_c.search_link()
+        v_x = self.pins_x[0].detector.curr_val
+        v_c = self.pins_c[0].detector.curr_val
+        # тестовая логика среды потом удалить
+        self.pins_d[0].detector.curr_val = v_x * v_c
         for p_x in self.pins_x:
             p_x.correlation.calc_iter()
         for p_c in self.pins_c:
@@ -157,7 +165,7 @@ class Brain:
         for n in self.neurons:
             n.calc_iter()
 
-steps = 5000
+steps = 500
 br = Brain()
 a_Dofam, a_Detect, a_Control = [], [], []
 weightsX, weightsC, weightsD = [], [], []
@@ -177,8 +185,8 @@ for t in range(steps):
     #     a_A1.append(1)
 for t in range(steps):
     br.detectors[0].curr_val = a_Detect[t]
-    br.dofams[0].curr_val = a_Dofam[t]
-    br.controls[0].curr_val = a_Control[t]
+    # br.dofams[0].curr_val = a_Dofam[t]
+    # br.controls[0].curr_val = a_Control[t]
     br.calc_iter()
     weightsX.append(br.neurons[0].pins_x[0].correlation.value)
     weightsC.append(br.neurons[0].pins_c[0].correlation.value)
