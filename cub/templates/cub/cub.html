@@ -134,6 +134,12 @@
         data = JSON.parse(data_a.message)
         //document.querySelector('#chat-log').value += (data.message + '\n');
         if (str == 1) {
+            if ('del_food' in data) {
+                del_food_div_id = data.del_food;
+                document.getElementById(del_food_div_id).remove();
+                // console.log('del_food существует:', data.del_food);
+                // Действия если поле есть
+            }
             xx = data.x;
             yy = data.y;
             rr = data.r;
