@@ -5,6 +5,8 @@ from typing import List, Union, Any, Dict, Optional
 from collections import deque
 import matplotlib.pyplot as plt
 import random
+import pickle
+import os
         
 # -------------------------------
 # 2. Класс детектора
@@ -221,7 +223,19 @@ p1 = 0.00046
 p2 = 0.04
 p3 = p1/p2
 steps = 20000
-br = Brain()
+restart = False # True если хочешь стирать состояние мозга при перезапуске
+
+if os.path.exists('data.pkl'):
+    if restart:
+        os.remove('data.pkl')
+        br = Brain()
+    else:
+        with open('data.pkl', 'rb') as f:
+            br = pickle.load(f)
+else:
+    br = Brain()
+    
+
 a_Dofam, a_Detect, a_Control = [], [], []
 weightsX, weightsC, weightsD = [], [], []
 # случайная активность нейронов (0 или 1)
@@ -266,6 +280,12 @@ for t in range(steps):
     # A4 = A1*A2
     # br.neurons[0].dofams[0].curr_val = A4 if random.random() < 0.5 else A3
 sss = 1
+
+
+with open('data.pkl', 'wb') as f:
+    pickle.dump(br, f)
+    
+
 # визуализация
 print('длина истории с детектора: ',len(br.neurons[0].pins_x[0].correlation.history))
 print('длина истории с контроллера: ',len(br.neurons[0].pins_c[0].correlation.history))
