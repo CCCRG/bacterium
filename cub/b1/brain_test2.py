@@ -58,6 +58,7 @@ class Pin:
             self.detector = self.detectors[self.cursor]
         elif self.type == 'Control':
             self.detector = self.controls[self.cursor]
+            
         # if (self.correlation.value < abs(0.2) and 
         # len(self.correlation.history) > 100 or
         # len(self.correlation.history) == 0 and self.correlation.value == 0):
@@ -79,59 +80,82 @@ class Correlation:
         self.x = x
         self.y = y
         self.maxl = 10000
-        self.maxl_x = 500000
+        self.maxl_x = 10000
         self.history = deque(maxlen=self.maxl)
         self.history_x = deque(maxlen=self.maxl_x)
         self.value = 0
         self.is_first_iter = True
         self.norm_p = 0
         self.norm_n = 0
+        self.count_p = 0
+        self.count_n = 0
+        self.count_x = 0        
         
-        
-    def calc_iter(self): 
+    def _append_x(self, x_val):
+        """Добавляет x в историю и корректирует счётчик count_x"""
+        if len(self.history_x) == self.maxl_x:
+            old = self.history_x[0]
+            if old == 1:
+                self.count_x -= 1
+        self.history_x.append(x_val)
+        if x_val == 1:
+            self.count_x += 1
+
+    def _append_history(self, val):
+        """Добавляет значение в основную историю и корректирует счётчики"""
+        if len(self.history) == self.maxl:
+            old = self.history[0]
+            if old == 1:
+                self.count_p -= 1
+            elif old == -1:
+                self.count_n -= 1
+
+        self.history.append(val)
+        if val == 1:
+            self.count_p += 1
+        elif val == -1:
+            self.count_n += 1
+            
+    def calc_iter(self):
+        """Быстрая версия расчёта корреляции"""
+        if self.is_first_iter:
+            self.is_first_iter = False
+            self.x.prev_val = self.x.detector.curr_val
+            self.y.prev_val = self.y.detector.curr_val
+
         x_val = self.x.detector.curr_val
         y_val = self.y.detector.curr_val
-        x_eq_y = x_val*y_val
-        x_not_y = (1-x_val)*y_val
-        self.history_x.append(x_val)
-        if (x_eq_y == 1):
-            self.history.append(1)
-        elif x_not_y == 1:
-            self.history.append(-1)
+
+        # Добавляем x в историю
+        self._append_x(x_val)
+
+        # Обновляем основную историю
+        if x_val * y_val == 1:
+            self._append_history(1)
+        elif (1 - x_val) * y_val == 1:
+            self._append_history(-1)
         elif y_val == 1:
-            self.history.append(0)
+            self._append_history(0)
+
+        # Вычисляем средние и нормированные значения
         len_h = len(self.history)
-        len_h_x = len(self.history_x)
-        count_p = sum(1 for x in self.history if x == 1)
-        count_n = sum(1 for x in self.history if x == -1)
-        count_x = sum(1 for x in self.history_x if x == 1)
-        if len_h_x > 0:
-            avg_x = count_x/len_h_x
-        else:
-            avg_x = 0
-        if len_h > 0 and len_h_x > 0 and avg_x > 0:
-            p = count_p/len_h
-            n = count_n/len_h
-            
-            norm_p = p/avg_x
-            norm_n = n/(1-avg_x)
-            self.norm_p = norm_p
-            self.norm_n = norm_n
-            #self.value = len_h/self.maxl * (count_p - count_m)/len_h
-            self.value = (norm_p - norm_n)/(norm_p + norm_n)
-        else:
-            self.value = 0
-        
-        # if self.x.type == 'Control':
-            # if self.value < 10:
-            #     self.x.detector.curr_val = 1 if random.random() < 0.5 else 0
-            # else:
-            #     self.x.detector.curr_val = self.x.detectors[0].curr_val
-            # A1 = self.x.detectors[0].curr_val
-            # A2 = self.x.detector.curr_val
-            # A3 = 1 if random.random() < 0.5 else 0
-            # A4 = A1*A2
-            # self.x.dofams[0].curr_val = A4 if random.random() < 0.5 else A3
+        len_hx = len(self.history_x)
+        if len_hx == 0 or len_h == 0:
+            self.value = 0.0
+            return
+
+        avg_x = self.count_x / len_hx
+        if avg_x == 0 or avg_x == 1:
+            self.value = 0.0
+            return
+
+        p = self.count_p / len_h
+        n = self.count_n / len_h
+
+        self.norm_p = p / avg_x
+        self.norm_n = n / (1 - avg_x)
+        denom = (self.norm_p + self.norm_n)
+        self.value = (self.norm_p - self.norm_n) / denom if denom != 0 else 0.0
             
 # -------------------------------
 # 2. Класс нейрона
@@ -207,11 +231,34 @@ class Neuron:
         else:
             self.pins_c[0].detector.curr_val = self.pins_x[0].detector.curr_val
             
-        self.pins_d[0].detector.curr_val = B if random.random() < 0.5 else A4
+        self.pins_d[0].detector.curr_val = B if random.random() < 0.9995 else A4
         
 # -------------------------------
 # 2. Класс мозга
 # -------------------------------
+class BrainFast:
+    def __init__(self, n_neurons=1, n_detectors=1, n_dofams=1, n_controls=1):
+        self.n_neurons = n_neurons
+        self.n_detectors = n_detectors
+        self.n_dofams = n_dofams
+        self.n_controls = n_controls
+
+        # Значения активности детекторов
+        self.detectors = np.zeros(n_detectors, dtype=np.int8)
+        self.dofams = np.zeros(n_dofams, dtype=np.int8)
+        self.controls = np.zeros(n_controls, dtype=np.int8)
+
+        # Корреляции по каждому нейрону
+        self.corr_x = np.zeros(n_neurons)
+        self.corr_c = np.zeros(n_neurons)
+        self.corr_d = np.zeros(n_neurons)
+
+        # История для корреляции (фиксированная длина)
+        self.history_len = 10000
+        self.x_hist = np.zeros((n_neurons, self.history_len), dtype=np.int8)
+        self.y_hist = np.zeros((n_neurons, self.history_len), dtype=np.int8)
+        self.hist_ptr = np.zeros(n_neurons, dtype=np.int32)
+
 class Brain:
     def __init__(self):
         self.neurons: List[Neuron] = []
@@ -240,7 +287,7 @@ class Brain:
 p1 = 0.00046
 p2 = 0.04
 p3 = p1/p2
-steps = 20000
+steps = 500000
 restart = True # True если хочешь стирать состояние мозга при перезапуске
 is_new: bool = False
 if os.path.exists('/home/vboxuser/bacterium/cub/b1/data.pkl'):
@@ -274,9 +321,15 @@ print('длина истории с x: ',len(br.neurons[0].pins_x[0].correlation
 print('norm_p с x: ',br.neurons[0].pins_x[0].correlation.norm_p)
 print('norm_n с x: ',br.neurons[0].pins_x[0].correlation.norm_n)
 print('value с x: ',br.neurons[0].pins_x[0].correlation.value)
+print('norm_p с c: ',br.neurons[0].pins_c[0].correlation.norm_p)
+print('norm_n с c: ',br.neurons[0].pins_c[0].correlation.norm_n)
+print('value с c: ',br.neurons[0].pins_c[0].correlation.value)
+print('norm_p с d: ',br.neurons[0].pins_d[0].correlation.norm_p)
+print('norm_n с d: ',br.neurons[0].pins_d[0].correlation.norm_n)
+print('value с d: ',br.neurons[0].pins_d[0].correlation.value)
 plt.figure(figsize=(7,4))
 plt.plot(weightsX, label='Сила связи pinX')
-# plt.plot(weightsC, label='Сила связи pinC')
+plt.plot(weightsC, label='Сила связи pinC')
 # plt.plot(weightsD, label='Сила связи pinD')
 plt.title('Рост связи при совместной активности (правило Хебба)')
 plt.xlabel('Время (шаги)')
