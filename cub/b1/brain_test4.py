@@ -86,84 +86,62 @@ class Correlation:
     def __init__(self, x: Pin, y: DPin):
         self.x = x
         self.y = y
-        self.maxl = 10000
-        self.maxl_x = 10000
-        self.history = deque(maxlen=self.maxl)
-        self.history_x = deque(maxlen=self.maxl_x)
-        self.value = 0
-        self.is_first_iter = True
-        self.norm_p = 0
-        self.norm_n = 0
-        self.count_p = 0
-        self.count_n = 0
-        self.count_x = 0        
+        self.maxl = 500000
+        self.history_y = deque(maxlen=self.maxl)
+        self.history_x = deque(maxlen=self.maxl)
+        self.history_x = deque(maxlen=self.maxl)
+        self.history_avg_x = deque(maxlen=self.maxl)
+        self.history_avg_y = deque(maxlen=self.maxl)
+        self.value = 0    
         
-    def _append_x(self, x_val):
-        """Добавляет x в историю и корректирует счётчик count_x"""
-        if len(self.history_x) == self.maxl_x:
-            old = self.history_x[0]
-            if old == 1:
-                self.count_x -= 1
-        self.history_x.append(x_val)
-        if x_val == 1:
-            self.count_x += 1
-
-    def _append_history(self, val):
-        """Добавляет значение в основную историю и корректирует счётчики"""
-        if len(self.history) == self.maxl:
-            old = self.history[0]
-            if old == 1:
-                self.count_p -= 1
-            elif old == -1:
-                self.count_n -= 1
-
-        self.history.append(val)
-        if val == 1:
-            self.count_p += 1
-        elif val == -1:
-            self.count_n += 1
+        self.count = 0 
+        self.sum_x = 0
+        self.sum_y = 0
+        self.sum_dx_on_dy = 0
+        self.sum_dx2 = 0
+        self.sum_dy2 = 0
+        
             
     def calc_iter(self):
         """Быстрая версия расчёта корреляции"""
-        if self.is_first_iter:
-            self.is_first_iter = False
-            self.x.prev_val = self.x.detector.curr_val
-            self.y.prev_val = self.y.detector.curr_val
-
         x_val = self.x.detector.curr_val
         y_val = self.y.detector.curr_val
 
-        # Добавляем x в историю
-        self._append_x(x_val)
-
-        # Обновляем основную историю
-        if x_val * y_val == 1:
-            self._append_history(1)
-        elif (1 - x_val) * y_val == 1:
-            self._append_history(-1)
-        elif y_val == 1:
-            self._append_history(0)
-
-        # Вычисляем средние и нормированные значения
-        len_h = len(self.history)
-        len_hx = len(self.history_x)
-        if len_hx == 0 or len_h == 0:
-            self.value = 0.0
-            return
-
-        avg_x = self.count_x / len_hx
-        if avg_x == 0 or avg_x == 1:
-            self.value = 0.0
-            return
-
-        p = self.count_p / len_h
-        n = self.count_n / len_h
-
-        self.norm_p = p / avg_x
-        self.norm_n = n / (1 - avg_x)
-        denom = (self.norm_p + self.norm_n)
-        self.value = (self.norm_p - self.norm_n) / denom if denom != 0 else 0.0
-
+        """Добавляет x в историю и корректирует счётчик count_x"""
+        if len(self.history_x) == self.maxl:
+            old_x = self.history_x[0]
+            old_y = self.history_y[0]
+            self.sum_x -= old_x
+            self.sum_y -= old_y
+            old_avg_x = self.history_avg_x[0]
+            old_avg_y = self.history_avg_y[0]
+            old_dx = old_x - old_avg_x
+            old_dy = old_y - old_avg_y
+            self.sum_dx_on_dy -= old_dx*old_dy
+            old_dx2 = old_dx**2
+            old_dy2 = old_dy**2
+            self.sum_dx2 -= old_dx2
+            self.sum_dy2 -= old_dy2
+            self.count -= 1
+            
+        self.history_x.append(x_val)
+        self.history_y.append(y_val)
+        self.count += 1
+        self.sum_x += x_val
+        self.sum_y += y_val
+        avg_x = self.sum_x/self.count
+        avg_y = self.sum_y/self.count
+        self.history_avg_x.append(avg_x)
+        self.history_avg_y.append(avg_y)
+        dx = x_val - avg_x
+        dy = y_val - avg_y
+        self.sum_dx_on_dy += dx*dy
+        self.sum_dx2 += dx**2
+        self.sum_dy2 += dy**2
+        sqrt_sum_dx2 = self.sum_dx2**0.5
+        sqrt_sum_dy2 = self.sum_dy2**0.5
+        denom = (sqrt_sum_dx2*sqrt_sum_dy2)
+        self.value = self.sum_dx_on_dy/denom if denom != 0 else 0.0
             
 # -------------------------------
 # 2. Класс нейрона
@@ -272,7 +250,7 @@ class Brain:
 p1 = 0.00046
 p2 = 0.04
 p3 = p1/p2
-steps = 50000
+steps = 500000
 restart = True # True если хочешь стирать состояние мозга при перезапуске
 is_new: bool = False
 if os.path.exists('/home/vboxuser/bacterium/cub/b1/data.pkl'):
@@ -301,16 +279,9 @@ with open('/home/vboxuser/bacterium/cub/b1/data.pkl', 'wb') as f:
     pickle.dump(br, f)
 
 # визуализация
-print('длина истории с d=1: ',len(br.neurons[0].pins_x[0].correlation.history))
 print('длина истории с x: ',len(br.neurons[0].pins_x[0].correlation.history_x))
-print('norm_p с x: ',br.neurons[0].pins_x[0].correlation.norm_p)
-print('norm_n с x: ',br.neurons[0].pins_x[0].correlation.norm_n)
 print('value с x: ',br.neurons[0].pins_x[0].correlation.value)
-print('norm_p с c: ',br.neurons[0].pins_c[0].correlation.norm_p)
-print('norm_n с c: ',br.neurons[0].pins_c[0].correlation.norm_n)
 print('value с c: ',br.neurons[0].pins_c[0].correlation.value)
-print('norm_p с d: ',br.neurons[0].pins_d[0].correlation.norm_p)
-print('norm_n с d: ',br.neurons[0].pins_d[0].correlation.norm_n)
 print('value с d: ',br.neurons[0].pins_d[0].correlation.value)
 plt.figure(figsize=(7,4))
 plt.plot(weightsX, label='Сила связи pinX')

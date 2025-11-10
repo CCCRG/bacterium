@@ -124,45 +124,72 @@ class Correlation:
             self.count_n += 1
             
     def calc_iter(self):
-        """Быстрая версия расчёта корреляции"""
-        if self.is_first_iter:
-            self.is_first_iter = False
-            self.x.prev_val = self.x.detector.curr_val
-            self.y.prev_val = self.y.detector.curr_val
-
+        """
+        Вычисляет коэффициент корреляции Пирсона между двумя бинарными последовательностями.
+        seq1, seq2: списки или массивы одинаковой длины, содержащие 0 и 1.
+        """
         x_val = self.x.detector.curr_val
         y_val = self.y.detector.curr_val
+        crat = 1000
+        self.history_x.append(x_val)
+        self.history.append(y_val)
+        # Преобразуем в numpy-массивы
+        x = np.array(x_val)
+        y = np.array(y_val)
 
-        # Добавляем x в историю
-        self._append_x(x_val)
+        # Проверяем кратность
+        if len(self.history) % crat == 0:
+        # n кратно 3
+            corr = np.corrcoef(self.history_x, self.history)[0, 1]
+        else:
+            corr = 0
+        # n не кратно 3 
+        # # Проверяем, что последовательности бинарные
+        # if not (set(x).issubset({0, 1}) and set(y).issubset({0, 1})):
+        #     raise ValueError("Последовательности должны содержать только 0 и 1")
 
-        # Обновляем основную историю
-        if x_val * y_val == 1:
-            self._append_history(1)
-        elif (1 - x_val) * y_val == 1:
-            self._append_history(-1)
-        elif y_val == 1:
-            self._append_history(0)
+        # Вычисляем корреляцию
+        
+        self.value = corr
+        
+        # """Быстрая версия расчёта корреляции"""
+        # if self.is_first_iter:
+        #     self.is_first_iter = False
+        #     self.x.prev_val = self.x.detector.curr_val
+        #     self.y.prev_val = self.y.detector.curr_val
 
-        # Вычисляем средние и нормированные значения
-        len_h = len(self.history)
-        len_hx = len(self.history_x)
-        if len_hx == 0 or len_h == 0:
-            self.value = 0.0
-            return
 
-        avg_x = self.count_x / len_hx
-        if avg_x == 0 or avg_x == 1:
-            self.value = 0.0
-            return
 
-        p = self.count_p / len_h
-        n = self.count_n / len_h
+        # # Добавляем x в историю
+        # self._append_x(x_val)
 
-        self.norm_p = p / avg_x
-        self.norm_n = n / (1 - avg_x)
-        denom = (self.norm_p + self.norm_n)
-        self.value = (self.norm_p - self.norm_n) / denom if denom != 0 else 0.0
+        # # Обновляем основную историю
+        # if x_val * y_val == 1:
+        #     self._append_history(1)
+        # elif (1 - x_val) * y_val == 1:
+        #     self._append_history(-1)
+        # elif y_val == 1:
+        #     self._append_history(0)
+
+        # # Вычисляем средние и нормированные значения
+        # len_h = len(self.history)
+        # len_hx = len(self.history_x)
+        # if len_hx == 0 or len_h == 0:
+        #     self.value = 0.0
+        #     return
+
+        # avg_x = self.count_x / len_hx
+        # if avg_x == 0 or avg_x == 1:
+        #     self.value = 0.0
+        #     return
+
+        # p = self.count_p / len_h
+        # n = self.count_n / len_h
+
+        # self.norm_p = p / avg_x
+        # self.norm_n = n / (1 - avg_x)
+        # denom = (self.norm_p + self.norm_n)
+        # self.value = (self.norm_p - self.norm_n) / denom if denom != 0 else 0.0
 
             
 # -------------------------------
@@ -267,6 +294,43 @@ class Brain:
             n.calc_iter()
             n.calc_control()
 
+
+# def binary_correlation(seq1, seq2):
+#     """
+#     Вычисляет коэффициент корреляции Пирсона между двумя бинарными последовательностями.
+#     seq1, seq2: списки или массивы одинаковой длины, содержащие 0 и 1.
+#     """
+
+#     # Преобразуем в numpy-массивы
+#     x = np.array(seq1)
+#     y = np.array(seq2)
+
+#     # Проверяем длину
+#     if len(x) != len(y):
+#         raise ValueError("Последовательности должны быть одинаковой длины")
+
+#     # Проверяем, что последовательности бинарные
+#     if not (set(x).issubset({0, 1}) and set(y).issubset({0, 1})):
+#         raise ValueError("Последовательности должны содержать только 0 и 1")
+
+#     # Вычисляем корреляцию
+#     corr = np.corrcoef(x, y)[0, 1]
+#     return corr
+
+# a1 = deque(maxlen=10)
+# b1 = deque(maxlen=10)
+
+# # Пример использования
+# a2 = [0, 1, 0, 1, 1, 0, 1, 0]
+# b2 = [1, 1, 0, 1, 0, 0, 1, 0]
+
+# for v in a2:
+#     a1.append(v)
+    
+# for v in b2:
+#     b1.append(v)
+
+# print("Коэффициент корреляции:", binary_correlation(a1, b1))
 
 
 p1 = 0.00046

@@ -7,329 +7,153 @@ import matplotlib.pyplot as plt
 import random
 import pickle
 import os
-        
-# -------------------------------
-# 2. Класс детектора
-# -------------------------------
-class Detector:
-    def __init__(self, id: int, type: str):
-        self.id = id
-        self.type = type
-        self.curr_val = 0
-        
-# -------------------------------
-# 2. Класс пина в нейроне
-# -------------------------------
-class DPin:
-    def __init__(self, id: int, detectors: List[Detector], dofams: List[Detector], controls: List[Detector]):
-        self.id = id
-        self.type = 'Dofam'
-        self.detector: Detector
-        self.cursor = 0
-        self.detectors = detectors
-        self.dofams = dofams
-        self.controls = controls
-        self.correlation: Correlation = Correlation(self,self)
-        self.prev_val = 0
-        
-    def search_link(self):
-        self.detector = self.dofams[self.cursor]
-        # if (self.correlation.value < abs(0.2) and 
-        #     len(self.correlation.history) > 100):
-        #     self.cursor += 1
-        #     self.detector = self.dofams[self.cursor]
-        #     self.correlation = Correlation(self, self)
-        
-class Pin:
-    def __init__(self, id: int, type: str, detectors: List[Detector], dofams: List[Detector], controls: List[Detector], y_pin: DPin):
-        self.id = id
-        self.type = type
-        self.detector: Detector
-        self.cursor = 0
-        self.detectors = detectors
-        self.dofams = dofams
-        self.controls = controls
-        self.y_pin: DPin = y_pin
-        self.correlation: Correlation = Correlation(self, y_pin)
-        self.prev_val = 0
-        
-    def search_link(self):
-        if self.type == 'Detector':
-            self.detector = self.detectors[self.cursor]
-        elif self.type == 'Control':
-            self.detector = self.controls[self.cursor]
-            
-        # if (self.correlation.value < abs(0.2) and 
-        # len(self.correlation.history) > 100 or
-        # len(self.correlation.history) == 0 and self.correlation.value == 0):
-        #     self.cursor += 1
-        #     if self.type == 'Detector':
-        #         self.detector = self.detectors[self.cursor]
-        #         self.correlation = Correlation(self, self.y_pin)
-        #     elif self.type == 'Control':
-        #         self.detector = self.controls[self.cursor]
-        #         self.correlation = Correlation(self, self.y_pin)
-            
-        
-        
-# -------------------------------
-# 2. Класс корреляции
-# -------------------------------
-class Correlation:
-    def __init__(self, x: Pin, y: DPin):
-        self.x = x
-        self.y = y
-        self.maxl = 10000
-        self.maxl_x = 10000
-        self.history = deque(maxlen=self.maxl)
-        self.history_x = deque(maxlen=self.maxl_x)
-        self.value = 0
-        self.is_first_iter = True
-        self.norm_p = 0
-        self.norm_n = 0
-        self.count_p = 0
-        self.count_n = 0
-        self.count_x = 0        
-        
-    def _append_x(self, x_val):
-        """Добавляет x в историю и корректирует счётчик count_x"""
-        if len(self.history_x) == self.maxl_x:
-            old = self.history_x[0]
-            if old == 1:
-                self.count_x -= 1
-        self.history_x.append(x_val)
-        if x_val == 1:
-            self.count_x += 1
-
-    def _append_history(self, val):
-        """Добавляет значение в основную историю и корректирует счётчики"""
-        if len(self.history) == self.maxl:
-            old = self.history[0]
-            if old == 1:
-                self.count_p -= 1
-            elif old == -1:
-                self.count_n -= 1
-
-        self.history.append(val)
-        if val == 1:
-            self.count_p += 1
-        elif val == -1:
-            self.count_n += 1
-            
-    def calc_iter(self):
-        """Быстрая версия расчёта корреляции"""
-        if self.is_first_iter:
-            self.is_first_iter = False
-            self.x.prev_val = self.x.detector.curr_val
-            self.y.prev_val = self.y.detector.curr_val
-
-        x_val = self.x.detector.curr_val
-        y_val = self.y.detector.curr_val
-
-        # Добавляем x в историю
-        self._append_x(x_val)
-
-        # Обновляем основную историю
-        if x_val * y_val == 1:
-            self._append_history(1)
-        elif (1 - x_val) * y_val == 1:
-            self._append_history(-1)
-        elif y_val == 1:
-            self._append_history(0)
-
-        # Вычисляем средние и нормированные значения
-        len_h = len(self.history)
-        len_hx = len(self.history_x)
-        if len_hx == 0 or len_h == 0:
-            self.value = 0.0
-            return
-
-        avg_x = self.count_x / len_hx
-        if avg_x == 0 or avg_x == 1:
-            self.value = 0.0
-            return
-
-        p = self.count_p / len_h
-        n = self.count_n / len_h
-
-        self.norm_p = p / avg_x
-        self.norm_n = n / (1 - avg_x)
-        denom = (self.norm_p + self.norm_n)
-        self.value = (self.norm_p - self.norm_n) / denom if denom != 0 else 0.0
-            
-# -------------------------------
-# 2. Класс нейрона
-# -------------------------------
-class Neuron:
-    def __init__(self, id: int, detectors: List[Detector], dofams: List[Detector], controls: List[Detector]):
-        self.bias = 0.0
-        self.pins_x: List[Pin] = []
-        self.pins_d: List[Pin] = []
-        self.pins_c: List[Pin] = []
-        #self.correlations: List[Correlation] = []
-        self.detectors = detectors
-        self.dofams = dofams
-        self.controls = controls
-        self.add_dpin()
-        self.add_pin('Detector', self.pins_d[0])
-        self.add_pin('Control', self.pins_d[0])
-        
-    def add_dpin(self):
-        pin = DPin(len(self.pins_d), self.detectors, self.dofams, self.controls)
-        self.pins_d.append(pin)
-            
-    def add_pin(self, type: str, y_pin: DPin):
-        if type == 'Detector':
-            pin = Pin(len(self.pins_d),type, self.detectors, self.dofams, self.controls, y_pin)
-            self.pins_x.append(pin)
-        elif type == 'Control':
-            pin = Pin(len(self.pins_d),type, self.detectors, self.dofams, self.controls, y_pin)
-            self.pins_c.append(pin)
-        
-    # def add_corr(self, corr: Correlation):
-    #     self.correlations.append(corr)
-        
-    def calc_iter(self):
-        for p_d in self.pins_d:
-            p_d.search_link()
-        for p_x in self.pins_x:
-            p_x.search_link()
-        for p_c in self.pins_c:
-            p_c.search_link()
-        v_x = self.pins_x[0].detector.curr_val
-        v_c = self.pins_c[0].detector.curr_val
-        # тестовая логика среды потом удалить
-        # self.pins_d[0].detector.curr_val = v_x * v_c
-        for p_x in self.pins_x:
-            p_x.correlation.calc_iter()
-        for p_c in self.pins_c:
-            p_c.correlation.calc_iter()
-        for p_d in self.pins_d:
-            p_d.correlation.calc_iter()
-        for p_d in self.pins_d:
-            p_d.prev_val = p_d.detector.curr_val
-        for p_x in self.pins_x:
-            p_x.prev_val = p_x.detector.curr_val
-        for p_c in self.pins_c:
-            p_c.prev_val = p_c.detector.curr_val
-            
-    def calc_control(self):
-        p1 = 0.00046 # 0.00046
-        p2 = 0.04 # 0.04
-        p3 = p1/p2 # 0.0115
-        A1 = 1 if random.random() < p2 else 0
-        A2 = 1 if random.random() < 0.5 else 0
-        A3 = 1 if random.random() < p3 else 0
-        
-        A4 = 1 if random.random() < 0.5 else 0
-
-        B = A1*A2*A3
-        
-        self.pins_x[0].detector.curr_val = A1
-        if self.pins_c[0].correlation.value < 10:
-            self.pins_c[0].detector.curr_val = A2
-        else:
-            self.pins_c[0].detector.curr_val = self.pins_x[0].detector.curr_val
-            
-        self.pins_d[0].detector.curr_val = B if random.random() < 0.9995 else A4
-        
+         
 # -------------------------------
 # 2. Класс мозга
 # -------------------------------
 class BrainFast:
-    def __init__(self, n_neurons=1, n_detectors=1, n_dofams=1, n_controls=1):
+    def __init__(self, n_neurons=10, history_len=1000):
+        # основные размеры
         self.n_neurons = n_neurons
-        self.n_detectors = n_detectors
-        self.n_dofams = n_dofams
-        self.n_controls = n_controls
+        self.history_len = history_len
 
-        # Значения активности детекторов
-        self.detectors = np.zeros(n_detectors, dtype=np.int8)
-        self.dofams = np.zeros(n_dofams, dtype=np.int8)
-        self.controls = np.zeros(n_controls, dtype=np.int8)
+        # состояния (аналог detector, dofam, control)
+        self.detectors = np.zeros(n_neurons, dtype=np.int8)
+        self.dofams = np.zeros(n_neurons, dtype=np.int8)
+        self.controls = np.zeros(n_neurons, dtype=np.int8)
 
-        # Корреляции по каждому нейрону
+        # корреляции
         self.corr_x = np.zeros(n_neurons)
         self.corr_c = np.zeros(n_neurons)
         self.corr_d = np.zeros(n_neurons)
 
-        # История для корреляции (фиксированная длина)
-        self.history_len = 10000
-        self.x_hist = np.zeros((n_neurons, self.history_len), dtype=np.int8)
-        self.y_hist = np.zeros((n_neurons, self.history_len), dtype=np.int8)
+        # история сигналов
+        self.x_hist = np.zeros((n_neurons, history_len), dtype=np.int8)
+        self.y_hist = np.zeros((n_neurons, history_len), dtype=np.int8)
         self.hist_ptr = np.zeros(n_neurons, dtype=np.int32)
 
-class Brain:
-    def __init__(self):
-        self.neurons: List[Neuron] = []
-        self.detectors: List[Detector] = []
-        self.dofams: List[Detector] = []
-        self.controls: List[Detector] = []
-        start_detector = Detector(0, 'Detector')
-        self.detectors.append(start_detector)
-        start_dofam = Detector(0, 'Dofam')
-        self.dofams.append(start_dofam)
-        start_control = Detector(0, 'Control')
-        self.controls.append(start_control)
-        start_neuron = Neuron(0,self.detectors, self.dofams, self.controls)
-        self.add_neuron(start_neuron)
-
-    def add_neuron(self, neuron: Neuron):
-        self.neurons.append(neuron)
-    
+    # --- корреляция между X и Y ---
     def calc_iter(self):
-        for n in self.neurons:
-            n.calc_iter()
-            n.calc_control()
+        n = self.n_neurons
+        x = self.detectors
+        y = self.dofams
+
+        # сохранить значения в историю
+        idx = self.hist_ptr % self.history_len
+        self.x_hist[np.arange(n), idx] = x
+        self.y_hist[np.arange(n), idx] = y
+        self.hist_ptr += 1
+
+        # считаем статистику
+        count_p = np.sum(self.x_hist * self.y_hist == 1, axis=1)
+        count_n = np.sum(((1 - self.x_hist) * self.y_hist) == 1, axis=1)
+        count_x = np.sum(self.x_hist == 1, axis=1)
+        L = np.minimum(self.hist_ptr, self.history_len)
+
+        avg_x = np.divide(count_x, L, out=np.zeros_like(count_x, dtype=float), where=L!=0)
+        valid = (avg_x > 0) & (avg_x < 1)
+
+        p = np.zeros(n)
+        n_ = np.zeros(n)
+        p[valid] = count_p[valid] / L[valid]
+        n_[valid] = count_n[valid] / L[valid]
+
+        norm_p = np.zeros(n)
+        norm_n = np.zeros(n)
+        norm_p[valid] = p[valid] / avg_x[valid]
+        norm_n[valid] = n_[valid] / (1 - avg_x[valid])
+
+        denom = norm_p + norm_n
+        with np.errstate(divide='ignore', invalid='ignore'):
+            corr = np.where(denom != 0, (norm_p - norm_n) / denom, 0)
+            corr = np.nan_to_num(corr, nan=0.0, posinf=0.0, neginf=0.0)
+        self.corr_x = corr
+        self.corr_c = corr.copy()
+        self.corr_d = corr.copy()
+
+    # --- вычисление активности (контроль) ---
+    def calc_control(self, p1=0.00046, p2=0.04):
+        n = self.n_neurons
+        p3 = p1 / p2
+
+        # генерируем случайные бинарные состояния
+        rand = np.random.rand(n, 4)
+        A1 = (rand[:, 0] < p2).astype(np.int8)
+        A2 = (rand[:, 1] < 0.5).astype(np.int8)
+        A3 = (rand[:, 2] < p3).astype(np.int8)
+        A4 = (rand[:, 3] < 0.5).astype(np.int8)
+        B = A1 * A2 * A3
+
+        # обновляем состояния
+        self.detectors[:] = A1
+        self.controls[:] = np.where(self.corr_c < 10, A2, A1)
+        self.dofams[:] = np.where(np.random.rand(n) < 0.5, B, A4)
+
+    # --- один шаг ---
+    def step(self):
+        self.calc_control()
+        self.calc_iter()
 
 
 
-p1 = 0.00046
-p2 = 0.04
-p3 = p1/p2
-steps = 500000
-restart = True # True если хочешь стирать состояние мозга при перезапуске
-is_new: bool = False
-if os.path.exists('/home/vboxuser/bacterium/cub/b1/data.pkl'):
-    if restart:
-        os.remove('/home/vboxuser/bacterium/cub/b1/data.pkl')
-        is_new = True
-    else:
-        with open('/home/vboxuser/bacterium/cub/b1/data.pkl', 'rb') as f:
-            br = pickle.load(f)
-else:
-    is_new = True
-if is_new:
-    br = Brain()
+if __name__ == "__main__":
+    br = BrainFast(n_neurons=1)
+
+    steps = 500000
+    weights = np.zeros((steps, br.n_neurons))
+
+    for t in range(steps):
+        br.step()
+        weights[t] = br.corr_x
+
+
+
+# p1 = 0.00046
+# p2 = 0.04
+# p3 = p1/p2
+# steps = 500000
+# restart = True # True если хочешь стирать состояние мозга при перезапуске
+# is_new: bool = False
+# if os.path.exists('/home/vboxuser/bacterium/cub/b1/data.pkl'):
+#     if restart:
+#         os.remove('/home/vboxuser/bacterium/cub/b1/data.pkl')
+#         is_new = True
+#     else:
+#         with open('/home/vboxuser/bacterium/cub/b1/data.pkl', 'rb') as f:
+#             br = pickle.load(f)
+# else:
+#     is_new = True
+# if is_new:
+#     br = Brain()
     
-a_Dofam, a_Detect, a_Control = [], [], []
-weightsX, weightsC, weightsD = [], [], []
+# a_Dofam, a_Detect, a_Control = [], [], []
+# weightsX, weightsC, weightsD = [], [], []
 
-for t in range(steps):
-    br.calc_iter()
-    weightsX.append(br.neurons[0].pins_x[0].correlation.value)
-    weightsC.append(br.neurons[0].pins_c[0].correlation.value)
-    weightsD.append(br.neurons[0].pins_d[0].correlation.value)
+# for t in range(steps):
+#     br.calc_iter()
+#     weightsX.append(br.neurons[0].pins_x[0].correlation.value)
+#     weightsC.append(br.neurons[0].pins_c[0].correlation.value)
+#     weightsD.append(br.neurons[0].pins_d[0].correlation.value)
     
-sss = 1
-with open('/home/vboxuser/bacterium/cub/b1/data.pkl', 'wb') as f:
-    pickle.dump(br, f)
+# sss = 1
+# with open('/home/vboxuser/bacterium/cub/b1/data.pkl', 'wb') as f:
+#     pickle.dump(br, f)
 
-# визуализация
-print('длина истории с d=1: ',len(br.neurons[0].pins_x[0].correlation.history))
-print('длина истории с x: ',len(br.neurons[0].pins_x[0].correlation.history_x))
-print('norm_p с x: ',br.neurons[0].pins_x[0].correlation.norm_p)
-print('norm_n с x: ',br.neurons[0].pins_x[0].correlation.norm_n)
-print('value с x: ',br.neurons[0].pins_x[0].correlation.value)
-print('norm_p с c: ',br.neurons[0].pins_c[0].correlation.norm_p)
-print('norm_n с c: ',br.neurons[0].pins_c[0].correlation.norm_n)
-print('value с c: ',br.neurons[0].pins_c[0].correlation.value)
-print('norm_p с d: ',br.neurons[0].pins_d[0].correlation.norm_p)
-print('norm_n с d: ',br.neurons[0].pins_d[0].correlation.norm_n)
-print('value с d: ',br.neurons[0].pins_d[0].correlation.value)
+# # визуализация
+# print('длина истории с d=1: ',len(br.neurons[0].pins_x[0].correlation.history))
+# print('длина истории с x: ',len(br.neurons[0].pins_x[0].correlation.history_x))
+# print('norm_p с x: ',br.neurons[0].pins_x[0].correlation.norm_p)
+# print('norm_n с x: ',br.neurons[0].pins_x[0].correlation.norm_n)
+# print('value с x: ',br.neurons[0].pins_x[0].correlation.value)
+# print('norm_p с c: ',br.neurons[0].pins_c[0].correlation.norm_p)
+# print('norm_n с c: ',br.neurons[0].pins_c[0].correlation.norm_n)
+# print('value с c: ',br.neurons[0].pins_c[0].correlation.value)
+# print('norm_p с d: ',br.neurons[0].pins_d[0].correlation.norm_p)
+# print('norm_n с d: ',br.neurons[0].pins_d[0].correlation.norm_n)
+# print('value с d: ',br.neurons[0].pins_d[0].correlation.value)
 plt.figure(figsize=(7,4))
-plt.plot(weightsX, label='Сила связи pinX')
-plt.plot(weightsC, label='Сила связи pinC')
+plt.plot(weights, label='Сила связи pinX')
+# plt.plot(weightsC, label='Сила связи pinC')
 # plt.plot(weightsD, label='Сила связи pinD')
 plt.title('Рост связи при совместной активности (правило Хебба)')
 plt.xlabel('Время (шаги)')
