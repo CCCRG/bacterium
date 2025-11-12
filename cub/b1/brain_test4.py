@@ -86,7 +86,7 @@ class Correlation:
     def __init__(self, x: Pin, y: DPin):
         self.x = x
         self.y = y
-        self.maxl = 10000
+        self.maxl = 100000
         self.history_y = deque(maxlen=self.maxl)
         self.history_x = deque(maxlen=self.maxl)
         self.history_x = deque(maxlen=self.maxl)
@@ -211,7 +211,7 @@ class Neuron:
 
         B = A1*A2*A3
         
-        self.pins_x[0].detector.curr_val = A1*A2
+        self.pins_x[0].detector.curr_val = A4
         self.pins_c[0].detector.curr_val = A2
         # if self.pins_c[0].correlation.value < 10:
         #     self.pins_c[0].detector.curr_val = A2
@@ -251,7 +251,7 @@ class Brain:
 p1 = 0.00046
 p2 = 0.04
 p3 = p1/p2
-steps = 100000
+steps = 500000
 restart = True # True если хочешь стирать состояние мозга при перезапуске
 is_new: bool = False
 if os.path.exists('/home/vboxuser/bacterium/cub/b1/data.pkl'):

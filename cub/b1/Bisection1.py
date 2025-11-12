@@ -52,6 +52,10 @@ i = 0
 bi = Bisection()
 is_while = True
 while is_while:
+    print("i: ", i)
+    print("sec: ", bi.sec)
+    print("min: ", bi.min)
+    print("max: ", bi.max)
     i += 1
     ch = bi.check(source, result)
     if ch:
@@ -73,3 +77,5 @@ while is_while:
 
 print("i: ", i)
 print("sec: ", bi.sec)
+print("min: ", bi.min)
+print("max: ", bi.max)
